@@ -2,34 +2,51 @@ import React, { useEffect, useState } from 'react';
 
 const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [animationState, setAnimationState] = useState('closed'); // 'closed', 'opening', 'open', 'closing'
   
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && (animationState === 'closed' || animationState === 'closing')) {
+      // Открытие модального окна
       setIsAnimating(true);
-      // Блокируем прокрутку на body когда модальное окно открыто
+      setAnimationState('opening');
+      
+      // Блокируем прокрутку
       document.body.style.overflow = 'hidden';
-    } else {
-      // Добавляем небольшую задержку перед удалением модального окна из DOM
+      
+      // Задержка перед переходом к полностью открытому состоянию
       const timer = setTimeout(() => {
+        setAnimationState('open');
+      }, 10); // Короткая задержка для запуска анимации
+      
+      return () => clearTimeout(timer);
+    } else if (!isOpen && (animationState === 'open' || animationState === 'opening')) {
+      // Закрытие модального окна
+      setAnimationState('closing');
+      
+      // Задержка перед полным удалением
+      const timer = setTimeout(() => {
+        setAnimationState('closed');
         setIsAnimating(false);
         // Возвращаем прокрутку когда модальное окно закрыто
         document.body.style.overflow = '';
-      }, 300); // Это должно соответствовать длительности анимации
+      }, 300); // Должно соответствовать длительности анимации
       
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, animationState]);
   
   // Если модальное окно закрыто и нет анимации - не рендерим ничего
-  if (!isOpen && !isAnimating) return null;
+  if (animationState === 'closed' && !isAnimating) return null;
   
-  // Определяем классы анимации
+  // Определяем классы анимации в зависимости от состояния
+  const isVisible = animationState === 'open' || animationState === 'opening';
+  
   const backdropClasses = `fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-    isOpen ? 'opacity-100' : 'opacity-0'
+    animationState === 'open' ? 'opacity-100' : 'opacity-0'
   }`;
   
   const modalClasses = `fixed inset-0 z-50 flex items-start justify-center p-0 transition-all duration-300 ${
-    isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-6 opacity-0 scale-95'
+    animationState === 'open' ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-6 opacity-0 scale-95'
   }`;
 
   // Изменены стили для полноэкранного режима
