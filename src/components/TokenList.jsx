@@ -39,7 +39,7 @@ const TokenList = () => {
       amount: '2.35', 
       value: '26,360.29', 
       change: 3.19,
-      icon: '/ton.svg'
+      icon: `${process.env.PUBLIC_URL}/ton.svg`
     },
     { 
       token: 'Tether', 
@@ -47,7 +47,7 @@ const TokenList = () => {
       amount: '125.75', 
       value: '125.75', 
       change: 0.01,
-      icon: '/usdt.svg'
+      icon: `${process.env.PUBLIC_URL}/usdt.svg`
     }
   ];
 
