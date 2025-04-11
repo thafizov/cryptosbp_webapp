@@ -53,7 +53,7 @@ const Footer = ({ activeTab, onTabChange }) => {
   
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#020203] via-[#020203] to-transparent pt-6 pb-2 z-30">
-      <div className="container max-w-md mx-auto mb-[5px]">
+      <div className="container max-w-md mx-auto mb-[10px]">
         <nav className="bg-gray-800 rounded-xl overflow-hidden">
           <div className="flex justify-around">
             {tabs.map(tab => (
