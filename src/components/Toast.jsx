@@ -17,7 +17,7 @@ const Toast = ({ message, visible, onClose, type = 'success' }) => {
   const textColor = type === 'success' ? 'text-gray-900' : 'text-white';
   
   return (
-    <div className="fixed bottom-24 left-0 right-0 flex justify-center items-center z-50 pointer-events-none">
+    <div className="fixed top-4 left-0 right-0 flex justify-center items-center z-[100] pointer-events-none">
       <div className={`${bgColor} ${textColor} py-2 px-4 rounded-lg shadow-lg flex items-center`}>
         {type === 'success' && (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
