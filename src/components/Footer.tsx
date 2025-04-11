@@ -50,14 +50,14 @@ const Footer: React.FC<FooterProps> = ({ activeTab = 'home', onTabChange = () =>
   ];
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#020203] via-[#020203] to-transparent pt-6 pb-2 z-30">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#020203] via-[#020203] to-transparent pt-6 pb-safe z-30">
       <div className="container max-w-md mx-auto">
-        <nav className="bg-gray-800 rounded-xl overflow-hidden">
+        <nav className="bg-gray-800 rounded-xl overflow-hidden mb-1 pb-safe">
           <div className="flex justify-around">
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${
+                className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${
                   activeTab === tab.id 
                     ? 'text-lime-400 transform scale-110' 
                     : 'text-gray-400 hover:text-gray-200'

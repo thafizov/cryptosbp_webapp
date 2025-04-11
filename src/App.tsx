@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Footer from './components/Footer';
 import Modal from './components/Modal';
 import './index.css';
+import './utils/safeArea.css';
 import { useTelegram } from './contexts/TelegramContext';
+import useDeviceDetection from './hooks/useDeviceDetection';
 
 function App() {
   const { user } = useTelegram();
@@ -12,6 +14,22 @@ function App() {
     deposit: false,
     scanner: false,
   });
+  
+  // Определение типа устройства
+  const deviceInfo = useDeviceDetection();
+  
+  // Добавление класса для iOS-устройств с Home Indicator
+  useEffect(() => {
+    const htmlEl = document.documentElement;
+    
+    if (deviceInfo.hasHomeIndicator) {
+      htmlEl.classList.add('has-home-indicator');
+    }
+    
+    return () => {
+      htmlEl.classList.remove('has-home-indicator');
+    };
+  }, [deviceInfo.hasHomeIndicator]);
 
   const openModal = (modalName: string) => {
     setModals(prev => ({ ...prev, [modalName]: true }));

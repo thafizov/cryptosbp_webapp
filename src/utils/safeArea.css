@@ -1,0 +1,39 @@
+/* iOS Safe Area Utilities */
+
+/* For CSS использующий env() */
+.has-safe-area-support {
+  /* For padding */
+  --safe-area-inset-top: env(safe-area-inset-top);
+  --safe-area-inset-right: env(safe-area-inset-right);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  --safe-area-inset-left: env(safe-area-inset-left);
+}
+
+/* Фоллбэк для браузеров без поддержки env() */
+.no-safe-area-support {
+  --safe-area-inset-top: 0px;
+  --safe-area-inset-right: 0px;
+  --safe-area-inset-bottom: 0px;
+  --safe-area-inset-left: 0px;
+}
+
+/* Специальный класс для нижнего отступа для устройств с Home Indicator */
+.has-home-indicator {
+  --safe-area-inset-bottom: 34px;
+}
+
+/* Утилиты для использования с Tailwind */
+.p-safe-bottom {
+  padding-bottom: calc(1rem + var(--safe-area-inset-bottom, 0px));
+}
+
+.m-safe-bottom {
+  margin-bottom: calc(1rem + var(--safe-area-inset-bottom, 0px));
+}
+
+/* Скрипт для обнаружения поддержки Safe Area */
+@media (resolution: 1dppx) {
+  :root {
+    --safe-area-inset-detection: env(safe-area-inset-bottom, 0px);
+  }
+} 

@@ -22,6 +22,12 @@ module.exports = {
       fontFamily: {
         sans: ['DM Sans', 'sans-serif'],
       },
+      padding: {
+        'safe': 'env(safe-area-inset-bottom, 1rem)'
+      },
+      margin: {
+        'safe': 'env(safe-area-inset-bottom, 1rem)'
+      }
     },
   },
   plugins: [],

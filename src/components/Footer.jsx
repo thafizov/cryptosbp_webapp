@@ -53,13 +53,13 @@ const Footer = ({ activeTab, onTabChange }) => {
   
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30">
-      <div className="bg-gray-800 rounded-t-2xl pt-6 pb-8">
-        <div className="container max-w-md mx-auto mb-[10px]">
+      <div className="bg-gray-800 rounded-t-2xl pt-4 pb-safe">
+        <div className="container max-w-md mx-auto">
           <div className="flex justify-around">
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${
+                className={`flex flex-col items-center justify-center p-2 transition-all duration-300 ${
                   activeTab === tab.id 
                     ? 'text-lime-400 transform scale-110' 
                     : 'text-gray-400 hover:text-gray-200'
