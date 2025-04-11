@@ -20,7 +20,7 @@ module.exports = {
         negative: '#F44336',
       },
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       padding: {
         'safe': 'env(safe-area-inset-bottom, 1rem)'
