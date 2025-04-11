@@ -60,6 +60,7 @@ export function TelegramProvider({ children }) {
           document.body.style.position = 'relative';
           document.body.style.minHeight = '100%';
           document.body.style.overflowX = 'hidden';
+          document.body.style.overscrollBehavior = 'none';
           
           // Меняем цвет статус-бара
           const bgColor = webApp.themeParams?.bg_color || '#020203';

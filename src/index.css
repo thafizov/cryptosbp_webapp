@@ -87,12 +87,21 @@ html, body {
   padding: 0;
   min-height: 100%;
   height: 100%;
+  overscroll-behavior: none; /* Предотвращает прокрутку за пределы содержимого */
 }
 
 body {
   position: relative;
   touch-action: manipulation;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none; /* Предотвращает pull-to-refresh и bouncing на iOS */
+}
+
+/* Фиксация позиции, когда модальное окно открыто */
+body.tg-modal-open {
+  position: fixed;
+  width: 100%;
+  overscroll-behavior: none;
 }
 
 #root {
@@ -108,6 +117,7 @@ body {
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: none;
 }
 
 /* Анимации для модальных окон */

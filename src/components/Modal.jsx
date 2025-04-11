@@ -8,12 +8,24 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) 
       setIsAnimating(true);
       // Блокируем прокрутку на body когда модальное окно открыто
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('tg-modal-open');
+      // Добавляем фиксацию высоты, чтобы предотвратить появление белой полосы
+      document.documentElement.style.height = '100%';
+      document.body.style.height = '100%';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
     } else {
       // Добавляем небольшую задержку перед удалением модального окна из DOM
       const timer = setTimeout(() => {
         setIsAnimating(false);
         // Возвращаем прокрутку когда модальное окно закрыто
         document.body.style.overflow = '';
+        document.body.classList.remove('tg-modal-open');
+        // Возвращаем обычное поведение скролла
+        document.body.style.position = '';
+        document.body.style.height = '';
+        document.body.style.width = '';
+        document.documentElement.style.height = '';
       }, 300); // Это должно соответствовать длительности анимации
       
       return () => clearTimeout(timer);
