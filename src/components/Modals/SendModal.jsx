@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
 
-const SendModal = ({ isOpen, onClose, fullScreen = true }) => {
+const SendModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null }) => {
   const [step, setStep] = useState(1);
   const [selectedCrypto, setSelectedCrypto] = useState('TON');
   const [amount, setAmount] = useState('');
   const [address, setAddress] = useState('');
+
+  // Устанавливаем initialCrypto при открытии модального окна
+  useEffect(() => {
+    if (isOpen && initialCrypto) {
+      setSelectedCrypto(initialCrypto);
+    } else if (!isOpen) {
+      // Сбрасываем поля при закрытии модального окна
+      setStep(1);
+      // Не сбрасываем selectedCrypto, так как он может быть установлен при повторном открытии
+      setAmount('');
+      setAddress('');
+    }
+  }, [isOpen, initialCrypto]);
 
   const handleContinue = () => {
     setStep(2);

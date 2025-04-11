@@ -23,6 +23,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
+  const [selectedCrypto, setSelectedCrypto] = useState(null);
 
   const openModal = (modalName) => {
     setModals(prev => ({ ...prev, [modalName]: true }));
@@ -30,6 +31,10 @@ function App() {
 
   const closeModal = (modalName) => {
     setModals(prev => ({ ...prev, [modalName]: false }));
+    // Сбрасываем выбранную криптовалюту при закрытии модального окна
+    if (modalName === 'deposit' || modalName === 'send') {
+      setSelectedCrypto(null);
+    }
   };
 
   const handleScanSuccess = (result) => {
@@ -106,6 +111,30 @@ function App() {
   const handleSend = () => openModal('send');
   const handleReceive = () => openModal('deposit');
   const handleScan = () => openModal('scanner');
+
+  // Обработчик для клика по токену
+  const handleTokenClick = (symbol) => {
+    setSelectedCrypto(symbol);
+    openModal('deposit');
+  };
+
+  // Обработчик для клика по токену с выбором действия (контекстное меню)
+  const handleTokenContextClick = (event, symbol) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Показываем простой выбор действия
+    const action = window.confirm(`Выберите действие для ${symbol}:\n\nOK = Отправить\nОтмена = Пополнить`);
+    
+    setSelectedCrypto(symbol);
+    if (action) {
+      // Если ОК - открыть окно отправки
+      openModal('send');
+    } else {
+      // Если Отмена - открыть окно пополнения
+      openModal('deposit');
+    }
+  };
 
   // Демо-транзакции для истории
   const demoTransactions = [
@@ -225,16 +254,13 @@ function App() {
     switch (activeTab) {
       case 'home':
         return (
-          <>
-            <BalanceSection 
-              onSend={handleSend}
-              onReceive={handleReceive}
-              onSwap={() => console.log('Swap clicked')}
-              onBuySell={() => console.log('Buy & Sell clicked')}
-              onScan={handleScan}
+          <div className="space-y-6">
+            <BalanceSection onSend={handleSend} onReceive={handleReceive} onScan={handleScan} />
+            <TokenList 
+              onTokenClick={handleTokenClick} 
+              onTokenContextClick={handleTokenContextClick}
             />
-            <TokenList />
-          </>
+          </div>
         );
       case 'history':
         return (
@@ -514,20 +540,19 @@ function App() {
       <SendModal
         isOpen={modals.send}
         onClose={() => closeModal('send')}
-        fullScreen={true}
+        initialCrypto={selectedCrypto}
       />
       
       <DepositModal
         isOpen={modals.deposit}
         onClose={() => closeModal('deposit')}
-        fullScreen={true}
+        initialCrypto={selectedCrypto}
       />
       
       <ScannerModal
         isOpen={modals.scanner}
         onClose={() => closeModal('scanner')}
         onScanSuccess={handleScanSuccess}
-        fullScreen={true}
       />
       
       <PaymentModal
@@ -535,14 +560,12 @@ function App() {
         onClose={() => closeModal('payment')}
         paymentData={paymentData}
         onConfirm={handlePaymentConfirm}
-        fullScreen={true}
       />
       
       <Modal
         isOpen={modals.transactionDetails}
         onClose={() => closeModal('transactionDetails')}
         title="Детали транзакции"
-        fullScreen={true}
       >
         {renderTransactionDetails()}
       </Modal>

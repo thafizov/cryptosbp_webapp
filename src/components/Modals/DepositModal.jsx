@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
 
-const DepositModal = ({ isOpen, onClose, fullScreen = true }) => {
+const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null }) => {
   const [step, setStep] = useState(1);
   const [selectedCrypto, setSelectedCrypto] = useState('TON');
+
+  // Устанавливаем initialCrypto при открытии модального окна
+  useEffect(() => {
+    if (isOpen && initialCrypto) {
+      setSelectedCrypto(initialCrypto);
+      // Если криптовалюта выбрана извне (например, при клике по токену),
+      // сразу переходим к следующему шагу
+      setStep(2);
+    } else if (!isOpen) {
+      // Сбрасываем шаг при закрытии модального окна
+      setStep(1);
+    }
+  }, [isOpen, initialCrypto]);
 
   const handleContinue = () => {
     setStep(2);

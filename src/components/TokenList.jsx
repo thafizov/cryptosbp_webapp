@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 
-const TokenItem = ({ token, symbol, amount, value, change, icon }) => {
+const TokenItem = ({ token, symbol, amount, value, change, icon, onTokenClick }) => {
   const isPositive = change >= 0;
   
   return (
-    <div className="flex items-center justify-between py-4 border-b border-gray-800">
+    <div 
+      className="flex items-center justify-between py-4 border-b border-gray-800 hover:bg-gray-800/50 transition-colors cursor-pointer"
+      onClick={() => onTokenClick && onTokenClick(symbol)}
+    >
       <div className="flex items-center">
         <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mr-3 overflow-hidden">
           {icon ? (
@@ -28,7 +31,7 @@ const TokenItem = ({ token, symbol, amount, value, change, icon }) => {
   );
 };
 
-const TokenList = () => {
+const TokenList = ({ onTokenClick }) => {
   const [activeTab, setActiveTab] = useState('crypto');
   
   // Примеры токенов для демонстрации - только TON и USDT с локальными SVG
@@ -78,6 +81,7 @@ const TokenList = () => {
               value={token.value}
               change={token.change}
               icon={token.icon}
+              onTokenClick={onTokenClick}
             />
           ))
         ) : (
