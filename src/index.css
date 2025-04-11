@@ -102,8 +102,47 @@ body {
   background-color: #020203;
 }
 
-/* Дополнительный фикс для предотвращения прокрутки за пределы приложения */
+/* Дополнительный фикс для предотвращения прокрутки за пределы приложения, сохраняя анимацию модалок */
 .bg-background {
   min-height: 100vh;
-  overflow: hidden;
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Анимации для модальных окон */
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes modal-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modal-slide-out {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(20px); opacity: 0; }
+}
+
+.modal-backdrop-enter {
+  animation: modal-fade-in 0.3s ease forwards;
+}
+
+.modal-backdrop-exit {
+  animation: modal-fade-out 0.3s ease forwards;
+}
+
+.modal-content-enter {
+  animation: modal-slide-in 0.3s ease forwards;
+}
+
+.modal-content-exit {
+  animation: modal-slide-out 0.3s ease forwards;
 } 

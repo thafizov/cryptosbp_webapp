@@ -527,16 +527,18 @@ function App() {
   };
 
   return (
-    <div className="bg-background min-h-screen text-white pb-16 max-h-screen overflow-hidden flex flex-col">
-      {activeTab === 'profile' ? (
-        <div className="container max-w-md mx-auto p-4 overflow-y-auto flex-1">
-          {renderProfile()}
-        </div>
-      ) : (
-        <div className="container max-w-md mx-auto p-4 overflow-y-auto flex-1">
-          {renderActiveTab()}
-        </div>
-      )}
+    <div className="bg-background min-h-screen text-white flex flex-col">
+      <main className="flex-1 overflow-y-auto pb-16">
+        {activeTab === 'profile' ? (
+          <div className="container max-w-md mx-auto p-4">
+            {renderProfile()}
+          </div>
+        ) : (
+          <div className="container max-w-md mx-auto p-4">
+            {renderActiveTab()}
+          </div>
+        )}
+      </main>
       
       <Footer activeTab={activeTab} onTabChange={setActiveTab} />
       

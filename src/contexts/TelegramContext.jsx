@@ -54,9 +54,12 @@ export function TelegramProvider({ children }) {
           webApp.enableClosingConfirmation(); // Запрашиваем подтверждение при закрытии
           
           // Убираем лишние отступы при прокрутке на мобильных устройствах
-          document.documentElement.style.position = 'relative';
-          document.documentElement.style.overflow = 'hidden';
+          document.documentElement.style.overflow = 'auto';
+          document.documentElement.style.overflowX = 'hidden';
           document.documentElement.style.height = '100%';
+          document.body.style.position = 'relative';
+          document.body.style.minHeight = '100%';
+          document.body.style.overflowX = 'hidden';
           
           // Меняем цвет статус-бара
           const bgColor = webApp.themeParams?.bg_color || '#020203';

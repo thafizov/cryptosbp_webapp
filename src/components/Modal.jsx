@@ -25,11 +25,11 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) 
   
   // Определяем классы анимации
   const backdropClasses = `fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-    isOpen ? 'opacity-100' : 'opacity-0'
+    isOpen ? 'opacity-100 modal-backdrop-enter' : 'opacity-0 modal-backdrop-exit'
   }`;
   
   const modalClasses = `fixed inset-0 z-50 flex items-start justify-center p-0 transition-all duration-300 ${
-    isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-6 opacity-0 scale-95'
+    isOpen ? 'opacity-100 scale-100 modal-content-enter' : 'opacity-0 scale-95 modal-content-exit'
   }`;
 
   // Изменены стили для полноэкранного режима
