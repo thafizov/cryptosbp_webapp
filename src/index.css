@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap');
+
+@layer base {
+  :root {
+    --color-primary: #89FF44;      /* lime-300 */
+    --color-secondary: #020203;    /* dark background */
+    --color-blue: #5CCAD9;         /* cyan/blue color hex: #5CCAD9 */
+    --color-green: #89FF44;        /* lime green hex: #89FF44 */
+    --color-yellow: #E6FC5B;       /* yellow hex: #E6FC5B */
+    --color-white: #FFFFFF;        /* white */
+  }
+
+  body {
+    @apply bg-dark text-white;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-full font-medium transition-all duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-black hover:bg-opacity-90;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-800 text-white hover:bg-gray-700;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-700 text-white hover:bg-gray-800;
+  }
+  
+  .card {
+    @apply rounded-xl bg-secondary p-4;
+  }
+  
+  .input {
+    @apply rounded-lg border border-gray-700 px-4 py-2 
+    bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary text-white;
+  }
+} 
