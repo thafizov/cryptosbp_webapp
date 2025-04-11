@@ -7,11 +7,15 @@ import DepositModal from './components/Modals/DepositModal.jsx';
 import ScannerModal from './components/Modals/ScannerModal.jsx';
 import PaymentModal from './components/Modals/PaymentModal.jsx';
 import Modal from './components/Modal.jsx';
+import Toast from './components/Toast.jsx';
 import { useTelegram } from './contexts/TelegramContext';
+import useToast from './hooks/useToast';
+import copyToClipboard from './utils/clipboard';
 import './index.css';
 
 function App() {
   const { user, isLoading } = useTelegram();
+  const { toast, showToast, hideToast } = useToast();
   const [modals, setModals] = useState({
     send: false,
     deposit: false,
@@ -24,6 +28,16 @@ function App() {
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
   const [selectedCrypto, setSelectedCrypto] = useState(null);
+
+  // Функция для копирования текста с выводом уведомления
+  const handleCopy = async (text, message = "Скопировано!") => {
+    const success = await copyToClipboard(text);
+    if (success) {
+      showToast(message, 'success');
+    } else {
+      showToast('Ошибка при копировании', 'error');
+    }
+  };
 
   const openModal = (modalName) => {
     setModals(prev => ({ ...prev, [modalName]: true }));
@@ -199,6 +213,14 @@ function App() {
     const userName = user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Гость';
     const userInitial = userName.charAt(0);
     const username = user?.username || '-';
+    const photoUrl = user?.photo_url;
+    
+    // Добавляем возможность копировать ID пользователя
+    const handleCopyUserId = () => {
+      if (user?.id) {
+        handleCopy(user.id.toString(), 'ID пользователя скопирован!');
+      }
+    };
     
     return (
       <div className="bg-secondary rounded-xl p-5 text-white">
@@ -221,9 +243,19 @@ function App() {
           // Отображаем профиль пользователя
           <>
             <div className="flex items-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-lime-400 text-black flex items-center justify-center text-2xl font-bold mr-4 transition-transform duration-300 hover:scale-105">
-                {userInitial}
-              </div>
+              {photoUrl ? (
+                <div className="w-16 h-16 rounded-full bg-gray-700 mr-4 overflow-hidden">
+                  <img 
+                    src={photoUrl} 
+                    alt={userName} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-lime-400 text-black flex items-center justify-center text-2xl font-bold mr-4 transition-transform duration-300 hover:scale-105">
+                  {userInitial}
+                </div>
+              )}
               <div className="transition-opacity duration-300">
                 <h3 className="text-lg font-medium">{userName}</h3>
                 <p className="text-gray-400">@{username}</p>
@@ -233,7 +265,24 @@ function App() {
             <div className="bg-gray-800 rounded-lg p-4 mb-3 transition-colors duration-300 hover:bg-gray-700">
               <div className="flex justify-between items-center">
                 <span className="text-gray-400">ID пользователя</span>
-                <span className="text-sm">{user?.id || 'Н/Д'}</span>
+                <div className="flex items-center">
+                  <span className="text-sm mr-2">{user?.id || 'Н/Д'}</span>
+                  {user?.id && (
+                    <button onClick={handleCopyUserId} className="text-gray-400 hover:text-lime-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
+                        <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 rounded-lg p-4 mb-3 transition-colors duration-300 hover:bg-gray-700">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-400">Язык</span>
+                <span className="text-sm">{user?.language_code?.toUpperCase() || 'RU'}</span>
               </div>
             </div>
             
@@ -513,7 +562,7 @@ function App() {
           </div>
           <button 
             className="text-lime-400 text-sm flex items-center mt-2"
-            onClick={() => navigator.clipboard.writeText(hash)}
+            onClick={() => handleCopy(hash, 'ID транзакции скопирован!')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
@@ -527,18 +576,28 @@ function App() {
   };
 
   return (
-    <div className="bg-background min-h-screen text-white pb-16 max-h-screen overflow-hidden flex flex-col">
-      {activeTab === 'profile' ? (
-        <div className="container max-w-md mx-auto p-4 overflow-y-auto flex-1">
-          {renderProfile()}
-        </div>
-      ) : (
-        <div className="container max-w-md mx-auto p-4 overflow-y-auto flex-1">
-          {renderActiveTab()}
-        </div>
-      )}
+    <div className="bg-background min-h-screen text-white flex flex-col">
+      <main className="flex-1 overflow-y-auto pb-32">
+        {activeTab === 'profile' ? (
+          <div className="container max-w-md mx-auto p-4">
+            {renderProfile()}
+          </div>
+        ) : (
+          <div className="container max-w-md mx-auto p-4">
+            {renderActiveTab()}
+          </div>
+        )}
+      </main>
       
       <Footer activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      {/* Тост-уведомления */}
+      <Toast 
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onClose={hideToast}
+      />
       
       {/* Модальные окна */}
       <SendModal 
@@ -550,6 +609,7 @@ function App() {
         isOpen={modals.deposit} 
         onClose={() => closeModal('deposit')}
         initialCrypto={selectedCrypto}
+        onCopy={handleCopy}
       />
       
       <ScannerModal

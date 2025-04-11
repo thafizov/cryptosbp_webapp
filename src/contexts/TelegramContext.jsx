@@ -27,9 +27,16 @@ export function TelegramProvider({ children }) {
           // Получаем данные пользователя
           const user = webApp.initDataUnsafe?.user || null;
           const initData = webApp.initData || null;
+
+          // Если у пользователя есть фото в Telegram, сохраняем его URL
+          let photoUrl = null;
+          if (user && user.photo_url) {
+            photoUrl = user.photo_url;
+            console.log('User photo URL:', photoUrl);
+          }
           
           console.log('Telegram WebApp initialized:', { 
-            user, 
+            user: { ...user, photo_url: photoUrl }, 
             platform: webApp.platform,
             colorScheme: webApp.colorScheme,
             themeParams: webApp.themeParams
@@ -42,7 +49,7 @@ export function TelegramProvider({ children }) {
           
           // Устанавливаем данные в состояние
           setTelegramData({
-            user,
+            user: { ...user, photo_url: photoUrl },
             initData,
             webApp,
             isInitialized: true,
