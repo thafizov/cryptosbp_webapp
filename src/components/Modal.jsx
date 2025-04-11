@@ -1,53 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-  
   useEffect(() => {
     if (isOpen) {
-      setIsAnimating(true);
       // Блокируем прокрутку на body когда модальное окно открыто
       document.body.style.overflow = 'hidden';
-      document.body.classList.add('tg-modal-open');
-      // Добавляем фиксацию высоты, чтобы предотвратить появление белой полосы
       document.documentElement.style.height = '100%';
       document.body.style.height = '100%';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
+      document.body.style.overscrollBehavior = 'none';
     } else {
-      // Добавляем небольшую задержку перед удалением модального окна из DOM
-      const timer = setTimeout(() => {
-        setIsAnimating(false);
-        // Возвращаем прокрутку когда модальное окно закрыто
-        document.body.style.overflow = '';
-        document.body.classList.remove('tg-modal-open');
-        // Возвращаем обычное поведение скролла
-        document.body.style.position = '';
-        document.body.style.height = '';
-        document.body.style.width = '';
-        document.documentElement.style.height = '';
-      }, 300); // Это должно соответствовать длительности анимации
-      
-      return () => clearTimeout(timer);
+      // Возвращаем прокрутку когда модальное окно закрыто
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.height = '';
+      document.body.style.width = '';
+      document.documentElement.style.height = '';
+      document.body.style.overscrollBehavior = '';
     }
   }, [isOpen]);
   
-  // Если модальное окно закрыто и нет анимации - не рендерим ничего
-  if (!isOpen && !isAnimating) return null;
+  // Если модальное окно закрыто - не рендерим ничего
+  if (!isOpen) return null;
   
-  // Определяем классы анимации
-  const backdropClasses = `fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-    isOpen ? 'opacity-100 modal-backdrop-enter' : 'opacity-0 modal-backdrop-exit'
-  }`;
-  
-  const modalClasses = `fixed inset-0 z-50 flex items-start justify-center p-0 transition-all duration-300 ${
-    isOpen ? 'opacity-100 scale-100 modal-content-enter' : 'opacity-0 scale-95 modal-content-exit'
-  }`;
+  // Определяем классы без анимаций
+  const backdropClasses = 'fixed inset-0 bg-black/70 backdrop-blur-sm z-40';
+  const modalClasses = 'fixed inset-0 z-50 flex items-start justify-center p-0';
 
   // Изменены стили для полноэкранного режима
   const containerClasses = fullScreen 
-    ? `relative bg-secondary w-full h-[100vh] max-h-[100vh] flex flex-col overflow-hidden` 
-    : `relative bg-secondary rounded-2xl m-4 w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-xl`;
+    ? 'relative bg-secondary w-full h-[100vh] max-h-[100vh] flex flex-col overflow-hidden' 
+    : 'relative bg-secondary rounded-2xl m-4 w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-xl';
 
   return (
     <>

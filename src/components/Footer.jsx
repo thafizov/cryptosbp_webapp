@@ -52,9 +52,9 @@ const Footer = ({ activeTab, onTabChange }) => {
   ];
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#020203] via-[#020203] to-transparent pt-6 pb-[7px] z-30">
-      <div className="container max-w-md mx-auto mb-[5px]">
-        <nav className="bg-gray-800 rounded-xl overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-gray-800 z-30">
+      <div className="container max-w-md mx-auto px-4 pt-4 pb-[10px]">
+        <nav className="bg-gray-800 rounded-xl">
           <div className="flex justify-around">
             {tabs.map(tab => (
               <button
@@ -81,6 +81,8 @@ const Footer = ({ activeTab, onTabChange }) => {
           </div>
         </nav>
       </div>
+      {/* Зона для домашней полоски iPhone */}
+      <div className="h-[34px] bg-gray-800 w-full"></div>
     </div>
   );
 };

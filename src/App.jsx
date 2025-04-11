@@ -528,7 +528,7 @@ function App() {
 
   return (
     <div className="bg-background min-h-screen text-white flex flex-col">
-      <main className="flex-1 overflow-y-auto pb-16">
+      <main className="flex-1 overflow-y-auto pb-24">
         {activeTab === 'profile' ? (
           <div className="container max-w-md mx-auto p-4">
             {renderProfile()}

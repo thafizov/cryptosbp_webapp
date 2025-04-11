@@ -61,10 +61,30 @@ export function TelegramProvider({ children }) {
           document.body.style.minHeight = '100%';
           document.body.style.overflowX = 'hidden';
           document.body.style.overscrollBehavior = 'none';
+          document.documentElement.style.overscrollBehavior = 'none';
+          
+          // Отключаем масштабирование на мобильных устройствах
+          const viewportMeta = document.querySelector('meta[name=viewport]');
+          if (viewportMeta) {
+            viewportMeta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+          } else {
+            const meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+          }
           
           // Меняем цвет статус-бара
           const bgColor = webApp.themeParams?.bg_color || '#020203';
           webApp.setBackgroundColor(bgColor);
+          
+          // Предотвращаем прокрутку всего документа на iOS
+          document.addEventListener('touchmove', function(e) {
+            if(e.target.closest('.overflow-y-auto, .overflow-auto')) {
+              return true;
+            }
+            e.preventDefault();
+          }, { passive: false });
         } else {
           // Если приложение запущено не в Telegram
           console.log('Telegram WebApp is not available. Running in standalone mode.');
