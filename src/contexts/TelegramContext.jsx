@@ -22,12 +22,23 @@ export function TelegramProvider({ children }) {
           
           // Инициализируем приложение
           webApp.ready();
+          webApp.expand(); // Разворачиваем приложение на весь экран
           
           // Получаем данные пользователя
           const user = webApp.initDataUnsafe?.user || null;
           const initData = webApp.initData || null;
           
-          console.log('Telegram WebApp initialized:', { user, initData });
+          console.log('Telegram WebApp initialized:', { 
+            user, 
+            platform: webApp.platform,
+            colorScheme: webApp.colorScheme,
+            themeParams: webApp.themeParams
+          });
+          
+          // Настраиваем параметры приложения для Telegram
+          document.body.style.backgroundColor = webApp.themeParams?.bg_color || '#020203';
+          document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.themeParams?.bg_color || '#020203');
+          document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams?.text_color || '#ffffff');
           
           // Устанавливаем данные в состояние
           setTelegramData({
@@ -40,17 +51,31 @@ export function TelegramProvider({ children }) {
           });
           
           // Настраиваем параметры интерфейса
-          webApp.expand(); // Разворачиваем приложение на весь экран
           webApp.enableClosingConfirmation(); // Запрашиваем подтверждение при закрытии
           
+          // Убираем лишние отступы при прокрутке на мобильных устройствах
+          document.documentElement.style.position = 'relative';
+          document.documentElement.style.overflow = 'hidden';
+          document.documentElement.style.height = '100%';
+          
           // Меняем цвет статус-бара
-          const bgColor = '#020203';
+          const bgColor = webApp.themeParams?.bg_color || '#020203';
           webApp.setBackgroundColor(bgColor);
         } else {
           // Если приложение запущено не в Telegram
           console.log('Telegram WebApp is not available. Running in standalone mode.');
+          
+          // Создаем тестового пользователя для режима разработки
+          const testUser = {
+            id: 12345678,
+            first_name: 'John',
+            last_name: 'Doe',
+            username: 'johndoe',
+            language_code: 'en'
+          };
+          
           setTelegramData({
-            user: { first_name: 'Гость' },
+            user: testUser, // В режиме разработки используем тестового пользователя
             initData: null,
             webApp: null,
             isInitialized: false,

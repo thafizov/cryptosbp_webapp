@@ -527,24 +527,27 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen text-white flex flex-col" style={{ backgroundColor: '#020203' }}>
-      {/* Main content */}
-      <div className="flex-1 container max-w-md mx-auto p-4 pb-24">
-        {renderActiveTab()}
-      </div>
+    <div className="bg-background min-h-screen text-white pb-16 max-h-screen overflow-hidden flex flex-col">
+      {activeTab === 'profile' ? (
+        <div className="container max-w-md mx-auto p-4 overflow-y-auto flex-1">
+          {renderProfile()}
+        </div>
+      ) : (
+        <div className="container max-w-md mx-auto p-4 overflow-y-auto flex-1">
+          {renderActiveTab()}
+        </div>
+      )}
       
-      {/* Footer */}
       <Footer activeTab={activeTab} onTabChange={setActiveTab} />
       
-      {/* Modals */}
-      <SendModal
-        isOpen={modals.send}
+      {/* Модальные окна */}
+      <SendModal 
+        isOpen={modals.send} 
         onClose={() => closeModal('send')}
         initialCrypto={selectedCrypto}
       />
-      
-      <DepositModal
-        isOpen={modals.deposit}
+      <DepositModal 
+        isOpen={modals.deposit} 
         onClose={() => closeModal('deposit')}
         initialCrypto={selectedCrypto}
       />
