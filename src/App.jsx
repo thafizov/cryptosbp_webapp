@@ -14,7 +14,6 @@ import useToast from './hooks/useToast';
 import copyToClipboard from './utils/clipboard';
 import TransactionsList from './components/TransactionsList';
 import TransactionDetail from './components/TransactionDetail';
-import useTouchPrevention from './hooks/useTouchPrevention';
 import './index.css';
 
 function App() {
@@ -40,9 +39,6 @@ function App() {
 
   const mainRef = useRef(null);
   
-  // Используем хук для предотвращения сворачивания
-  useTouchPrevention(mainRef);
-
   // Демо-токены для отображения
   const demoTokens = [
     {

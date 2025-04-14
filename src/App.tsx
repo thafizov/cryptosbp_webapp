@@ -5,7 +5,6 @@ import './index.css';
 import './utils/safeArea.css';
 import { useTelegram } from './contexts/TelegramContext';
 import useDeviceDetection from './hooks/useDeviceDetection';
-import useTouchPrevention from './hooks/useTouchPrevention';
 
 function App() {
   const { user } = useTelegram();
@@ -21,9 +20,6 @@ function App() {
   
   // Ref для основного контейнера
   const mainRef = useRef<HTMLElement>(null);
-  
-  // Используем хук для предотвращения сворачивания
-  useTouchPrevention(mainRef);
   
   // Добавление класса для iOS-устройств с Home Indicator
   useEffect(() => {
