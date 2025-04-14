@@ -24,6 +24,14 @@ export function TelegramProvider({ children }) {
           webApp.ready();
           webApp.expand(); // Разворачиваем приложение на весь экран
           
+          // Добавляем слушатель изменения темы
+          webApp.onEvent('themeChanged', () => {
+            document.body.style.backgroundColor = webApp.themeParams?.bg_color || '#020203';
+            document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.themeParams?.bg_color || '#020203');
+            document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams?.text_color || '#ffffff');
+            document.body.setAttribute('data-theme', webApp.colorScheme || 'dark');
+          });
+          
           // Получаем данные пользователя
           const user = webApp.initDataUnsafe?.user || null;
           const initData = webApp.initData || null;
@@ -46,6 +54,9 @@ export function TelegramProvider({ children }) {
           document.body.style.backgroundColor = webApp.themeParams?.bg_color || '#020203';
           document.documentElement.style.setProperty('--tg-theme-bg-color', webApp.themeParams?.bg_color || '#020203');
           document.documentElement.style.setProperty('--tg-theme-text-color', webApp.themeParams?.text_color || '#ffffff');
+          
+          // Устанавливаем тему для pull-to-refresh
+          document.body.setAttribute('data-theme', webApp.colorScheme || 'dark');
           
           // Устанавливаем данные в состояние
           setTelegramData({

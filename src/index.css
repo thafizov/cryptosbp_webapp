@@ -185,10 +185,30 @@ body {
 /* Изменение цвета pull-to-refresh в мобильных браузерах */
 @supports (-webkit-touch-callout: none) {
   /* Стиль для iOS pull-to-refresh */
-  :root {
-    --pulltorefresh-background: #020203;
-    --pulltorefresh-text: #020203;
+  body {
     color-scheme: dark;
+  }
+  
+  /* Синхронизация с темой Telegram */
+  body[data-theme="dark"] {
+    color-scheme: dark;
+    background-color: var(--tg-theme-bg-color, #020203);
+  }
+  
+  body[data-theme="light"] {
+    color-scheme: light;
+    background-color: var(--tg-theme-bg-color, #ffffff);
+  }
+}
+
+/* Дополнительные фиксы для iOS Safari */
+@supports (-webkit-overflow-scrolling: touch) {
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .overflow-scroll {
+    -webkit-overflow-scrolling: touch;
   }
 }
 

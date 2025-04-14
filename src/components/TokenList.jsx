@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TokenItem = ({ token, symbol, amount, value, change, icon, onTokenClick, onTokenContextClick, tokenData }) => {
+const TokenItem = ({ token, symbol, amount, value, rubValue, change, icon, onTokenClick, onTokenContextClick, tokenData }) => {
   const isPositive = change >= 0;
   
   const handleContextMenu = (e) => {
@@ -27,7 +27,7 @@ const TokenItem = ({ token, symbol, amount, value, change, icon, onTokenClick, o
         </div>
         <div>
           <div className="font-medium text-white">{token} ({symbol})</div>
-          <div className="text-sm text-gray-400">${value}</div>
+          <div className="text-sm text-gray-400">₽{rubValue}</div>
         </div>
       </div>
       <div className="text-right">
@@ -47,7 +47,8 @@ const TokenList = ({ onTokenClick, onTokenContextClick }) => {
       token: 'The Open Network', 
       symbol: 'TON', 
       amount: '2.35', 
-      value: '26,360.29', 
+      value: '26,360.29',
+      rubValue: '2,115.00', // ~900 рублей за 1 TON
       change: 3.19,
       icon: `${process.env.PUBLIC_URL}/ton.svg`
     },
@@ -55,7 +56,8 @@ const TokenList = ({ onTokenClick, onTokenContextClick }) => {
       token: 'Tether', 
       symbol: 'USDT', 
       amount: '125.75', 
-      value: '125.75', 
+      value: '125.75',
+      rubValue: '12,575.00', // Добавляем стоимость в рублях
       change: 0.01,
       icon: `${process.env.PUBLIC_URL}/usdt.svg`
     }
@@ -71,6 +73,7 @@ const TokenList = ({ onTokenClick, onTokenContextClick }) => {
             symbol={token.symbol}
             amount={token.amount}
             value={token.value}
+            rubValue={token.rubValue}
             change={token.change}
             icon={token.icon}
             onTokenClick={onTokenClick}

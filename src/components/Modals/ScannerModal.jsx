@@ -2,157 +2,167 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../Modal';
 import jsQR from 'jsqr';
 
+const SCAN_INTERVAL = 150; // Интервал между сканированиями (мс)
+const DEBOUNCE_DELAY = 1000; // Задержка перед следующим сканированием после успешного (мс)
+
 const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => {
   const [scanning, setScanning] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [lastScanTime, setLastScanTime] = useState(0);
+  const [cameraPermission, setCameraPermission] = useState(null);
+  
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
-  const streamRef = useRef(null); // Реф для хранения потока камеры
+  const streamRef = useRef(null);
+  const animationFrameRef = useRef(null);
   
+  // Функция для проверки возможности сканирования (дебаунсинг)
+  const canScan = useCallback(() => {
+    const now = Date.now();
+    if (now - lastScanTime < DEBOUNCE_DELAY) {
+      return false;
+    }
+    return true;
+  }, [lastScanTime]);
+
   // Функция для запуска сканирования
-  const startScanner = async () => {
-    setErrorMessage('');
-    setScanning(true);
-    
+  const startScanner = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
       });
-      
-      // Сохраняем поток для последующего закрытия
+
       streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setScanning(true);
       }
     } catch (error) {
-      setScanning(false);
-      setErrorMessage('Не удалось получить доступ к камере. Пожалуйста, проверьте разрешения.');
       console.error('Ошибка доступа к камере:', error);
+      setErrorMessage(
+        error.name === 'NotAllowedError' 
+          ? 'Нет доступа к камере. Пожалуйста, разрешите доступ в настройках браузера.'
+          : 'Не удалось получить доступ к камере. Проверьте, что камера подключена и работает.'
+      );
     }
-  };
+  }, []);
   
   // Функция для остановки потока камеры
-  const stopCamera = () => {
+  const stopScanner = useCallback(() => {
     if (streamRef.current) {
-      const tracks = streamRef.current.getTracks();
-      tracks.forEach(track => track.stop());
+      streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
     setScanning(false);
-  };
-  
-  // Остановка сканирования при закрытии модального окна
-  // Используем useCallback, чтобы функция не пересоздавалась при каждом рендере
-  const stopScanner = useCallback(() => {
-    stopCamera();
   }, []);
 
-  // Обработка файла QR-кода
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          // Реальная логика декодирования QR-кода из изображения
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          
-          if (code) {
-            console.log('Найден QR-код в файле:', code.data);
-            stopCamera(); // Останавливаем камеру перед закрытием модального окна
-            onScanSuccess(code.data);
-          } else {
-            setErrorMessage('QR-код не найден в изображении');
-          }
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   // Обработка успешного сканирования
-  // Используем useCallback, чтобы функция не пересоздавалась при каждом рендере
   const handleSuccessfulScan = useCallback((data) => {
-    console.log('Найден QR-код:', data);
-    stopCamera(); // Останавливаем камеру
-    onScanSuccess(data); // Передаем результат наверх
-  }, [onScanSuccess]);
-
-  // Обработка сканирования кода
-  useEffect(() => {
-    let scanInterval;
+    if (!canScan()) return;
     
-    if (scanning && videoRef.current && canvasRef.current) {
-      // Реальная логика сканирования через камеру с jsQR
-      scanInterval = setInterval(() => {
-        if (!videoRef.current || videoRef.current.readyState !== videoRef.current.HAVE_ENOUGH_DATA) {
-          return;
-        }
-        
-        const canvas = canvasRef.current;
-        const canvasContext = canvas.getContext('2d');
-        
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        
-        canvasContext.drawImage(
-          videoRef.current, 
-          0, 
-          0, 
-          canvas.width, 
-          canvas.height
-        );
-        
-        const imageData = canvasContext.getImageData(
-          0, 
-          0, 
-          canvas.width, 
-          canvas.height
-        );
-        
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        
-        if (code) {
-          clearInterval(scanInterval);
-          handleSuccessfulScan(code.data);
-        }
-      }, 100);
+    setLastScanTime(Date.now());
+    console.log('QR-код успешно отсканирован:', data);
+    stopScanner();
+    onScanSuccess(data);
+  }, [onScanSuccess, stopScanner, canScan]);
+
+  // Обработка сканирования через камеру
+  useEffect(() => {
+    const scanQRCode = () => {
+      if (!videoRef.current || videoRef.current.readyState !== 4) {
+        animationFrameRef.current = requestAnimationFrame(scanQRCode);
+        return;
+      }
+
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (code) {
+        handleSuccessfulScan(code.data);
+      }
+
+      animationFrameRef.current = requestAnimationFrame(scanQRCode);
+    };
+
+    if (scanning) {
+      animationFrameRef.current = requestAnimationFrame(scanQRCode);
     }
 
     return () => {
-      if (scanInterval) {
-        clearInterval(scanInterval);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, [scanning, handleSuccessfulScan]);
 
-  // Эффект для запуска/остановки сканера
+  // Обработка файла QR-кода
+  const handleFileChange = useCallback(async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setErrorMessage('');
+    
+    try {
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+          handleSuccessfulScan(code.data);
+        } else {
+          setErrorMessage('QR-код не найден в изображении');
+        }
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Ошибка при обработке файла:', error);
+      setErrorMessage('Не удалось обработать изображение');
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [handleSuccessfulScan]);
+
+  // Эффект для управления жизненным циклом сканера
   useEffect(() => {
     if (isOpen) {
       startScanner();
     } else {
       stopScanner();
     }
-
-    return () => {
-      stopScanner();
-    };
-  }, [isOpen, stopScanner]);
+    return () => stopScanner();
+  }, [isOpen, startScanner, stopScanner]);
 
   return (
     <Modal
@@ -166,6 +176,7 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
           <button 
             onClick={() => fileInputRef.current?.click()}
             className="text-primary flex items-center"
+            disabled={scanning} // Отключаем кнопку во время сканирования
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
@@ -185,18 +196,35 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
         {errorMessage && (
           <div className="bg-red-900/20 rounded-lg p-3 mb-4 w-full">
             <p className="text-sm text-red-400">{errorMessage}</p>
+            {cameraPermission === 'denied' && (
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="text-primary text-sm mt-2 hover:underline"
+              >
+                Загрузить QR-код из галереи
+              </button>
+            )}
           </div>
         )}
         
         <div className="relative bg-black rounded-lg overflow-hidden mb-8 aspect-square w-full max-w-md mx-auto">
           {scanning ? (
-            <video 
-              ref={videoRef} 
-              className="w-full h-full" 
-              autoPlay 
-              playsInline 
-              muted
-            />
+            <div className="relative w-full h-full">
+              <video 
+                ref={videoRef} 
+                className="absolute inset-0 w-full h-full" 
+                autoPlay 
+                playsInline 
+                muted
+                style={{ 
+                  objectFit: 'cover',
+                  transform: 'scaleX(1)', // Убираем отзеркаливание
+                  display: 'block', // Явно указываем display
+                  minWidth: '100%',
+                  minHeight: '100%'
+                }}
+              />
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-800">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -208,7 +236,11 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
           
           <canvas 
             ref={canvasRef} 
-            className="absolute top-0 left-0 w-full h-full hidden" 
+            className="absolute top-0 left-0 w-full h-full opacity-50" 
+            style={{
+              zIndex: 10,
+              background: 'rgba(0,0,0,0.1)'
+            }}
           />
           
           <div className="absolute inset-0 border-2 border-white/30 rounded-lg pointer-events-none">
@@ -217,7 +249,10 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
         </div>
         
         <p className="text-center text-gray-400 mb-2 max-w-md mx-auto">
-          Наведите камеру на QR-код для сканирования
+          {scanning 
+            ? "Наведите камеру на QR-код для сканирования"
+            : "Включите камеру или загрузите изображение с QR-кодом"
+          }
         </p>
         
         <input 
