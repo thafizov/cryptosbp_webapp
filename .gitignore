@@ -32,10 +32,12 @@ yarn-error.log*
 # Temporary files
 /temp_setup/webapp
 
-# Задачи и документация
+# Задачи и документация разработки
 задача_*.md
-*.md
-QRScanner*.js
+frontend_webapp.md
+QRScannerREADME.md
+QRScannerExample.js
+QRScanner.js
 
 # Telegram бот
 /telegram_bot
