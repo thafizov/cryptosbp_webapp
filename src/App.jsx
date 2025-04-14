@@ -12,6 +12,8 @@ import Toast from './components/Toast.jsx';
 import { useTelegram } from './contexts/TelegramContext';
 import useToast from './hooks/useToast';
 import copyToClipboard from './utils/clipboard';
+import TransactionsList from './components/TransactionsList';
+import TransactionDetail from './components/TransactionDetail';
 import './index.css';
 
 function App() {
@@ -47,7 +49,13 @@ function App() {
 
   // Обновляем функцию для открытия модальных окон с возможностью указать родительское окно
   const openModal = (modalName, parentModal = null) => {
+    // Открываем новое модальное окно
     setModals(prev => ({ ...prev, [modalName]: true }));
+    
+    // Если указан родитель, и он открыт, то скрываем его (но не закрываем полностью)
+    if (parentModal && modals[parentModal]) {
+      setModals(prev => ({ ...prev, [parentModal]: false }));
+    }
     
     // Добавляем модальное окно в стек с указанием родителя
     setModalStack(prev => [...prev, { name: modalName, parent: parentModal }]);
@@ -60,35 +68,43 @@ function App() {
 
   // Обновляем функцию закрытия модального окна
   const closeModal = (modalName) => {
-    // Проверяем, есть ли окно в стеке
-    const modalInStack = modalStack.find(modal => modal.name === modalName);
-    
-    // Если окно есть в стеке и у него есть родитель, открываем родительское окно
-    if (modalInStack && modalInStack.parent) {
-      setModals(prev => ({ 
-        ...prev, 
-        [modalName]: false,
-        [modalInStack.parent]: true 
-      }));
-    } else {
-      // Иначе просто закрываем окно
-      setModals(prev => ({ ...prev, [modalName]: false }));
-    }
-    
-    // Удаляем окно из стека
-    setModalStack(prev => prev.filter(modal => modal.name !== modalName));
-    
-    // Если стек пуст после удаления, скрываем кнопку "Назад" в Telegram
-    if (webApp && modalStack.length <= 1) {
-      webApp.BackButton.hide();
-    }
-    
-    // Сбрасываем выбранную криптовалюту при закрытии модальных окон
-    if (modalName === 'deposit' || modalName === 'send') {
-      setSelectedCrypto(null);
-    }
-    if (modalName === 'tokenDetail') {
-      setSelectedTokenData(null);
+    // Находим модальное окно в стеке
+    const modalIndex = modalStack.findIndex(modal => modal.name === modalName);
+    if (modalIndex !== -1) {
+      const modal = modalStack[modalIndex];
+      
+      // Проверяем, есть ли у окна специальная функция закрытия
+      if (modal.customCloseAction) {
+        modal.customCloseAction();
+        return;
+      }
+      
+      // Стандартное поведение закрытия...
+      if (modal.parent) {
+        setModals(prev => ({ 
+          ...prev, 
+          [modalName]: false,
+          [modal.parent]: true 
+        }));
+      } else {
+        setModals(prev => ({ ...prev, [modalName]: false }));
+      }
+      
+      // Удаляем окно из стека
+      setModalStack(prev => prev.filter(m => m.name !== modalName));
+      
+      // Если стек пуст после удаления, скрываем кнопку "Назад" в Telegram
+      if (webApp && modalStack.length <= 1) {
+        webApp.BackButton.hide();
+      }
+      
+      // Сбрасываем выбранную криптовалюту при закрытии модальных окон
+      if (modalName === 'deposit' || modalName === 'send') {
+        setSelectedCrypto(null);
+      }
+      if (modalName === 'tokenDetail') {
+        setSelectedTokenData(null);
+      }
     }
   };
 
@@ -98,6 +114,14 @@ function App() {
       // Получаем текущее окно (последнее в стеке)
       const currentModal = modalStack[modalStack.length - 1];
       
+      // Проверяем, есть ли у текущего окна кастомный обработчик закрытия
+      if (currentModal.customCloseAction) {
+        // Если есть, используем его вместо стандартной логики
+        currentModal.customCloseAction();
+        return;
+      }
+      
+      // Если нет кастомного обработчика, используем стандартную логику
       // Закрываем текущее окно
       setModals(prev => ({ ...prev, [currentModal.name]: false }));
       
@@ -137,7 +161,7 @@ function App() {
         webApp.BackButton.offClick(goBackToPreviousModal);
       }
     };
-  }, [modalStack, webApp]);
+  }, [modalStack, webApp, goBackToPreviousModal]);
 
   const handleScanSuccess = (result) => {
     console.log('QR код отсканирован:', result);
@@ -226,16 +250,12 @@ function App() {
     setSelectedCrypto(symbol);
     // Корректно открываем новое окно, указывая родительское
     openModal('deposit', 'tokenDetail');
-    // Скрываем родительское окно без его удаления из стека
-    setModals(prev => ({ ...prev, tokenDetail: false }));
   };
 
   const handleTokenSend = (symbol) => {
     setSelectedCrypto(symbol);
     // Корректно открываем новое окно, указывая родительское
     openModal('send', 'tokenDetail');
-    // Скрываем родительское окно без его удаления из стека
-    setModals(prev => ({ ...prev, tokenDetail: false }));
   };
 
   // Обработчик для клика по токену с выбором действия (контекстное меню)
@@ -256,6 +276,69 @@ function App() {
     }
   };
 
+  // Обновляем обработчик для клика по транзакции
+  const handleTransactionClick = (transaction) => {
+    setSelectedTransaction(transaction);
+    
+    // Проверяем, не из токен-детали ли открывается транзакция
+    if (modals.tokenDetail) {
+      // Запоминаем текущий токен и данные
+      const currentToken = selectedCrypto;
+      const currentTokenData = selectedTokenData;
+      
+      // Закрываем окно токен-детали перед открытием деталей транзакции
+      setModals(prev => ({ ...prev, tokenDetail: false }));
+      
+      // Открываем детали транзакции с указанием родительского окна
+      openModal('transactionDetails', 'tokenDetail');
+      
+      // Дополнительно настраиваем кастомное закрытие для правильного возвращения
+      const currentIndex = modalStack.length;
+      setTimeout(() => {
+        setModalStack(prev => {
+          if (prev.length <= currentIndex) return prev;
+          
+          // Получаем модальное окно транзакции
+          const newStack = [...prev];
+          if (newStack[currentIndex] && newStack[currentIndex].name === 'transactionDetails') {
+            // Задаем пользовательский обработчик закрытия
+            newStack[currentIndex].customCloseAction = () => {
+              // Закрываем окно транзакции
+              setModals(prev => ({ 
+                ...prev, 
+                transactionDetails: false,
+                tokenDetail: true  // Открываем окно токена снова
+              }));
+              
+              // Восстанавливаем данные токена
+              setSelectedCrypto(currentToken);
+              setSelectedTokenData(currentTokenData);
+              
+              // Обновляем стек модальных окон
+              setModalStack(prev => {
+                // Удаляем транзакцию из стека
+                const filtered = prev.filter(m => m.name !== 'transactionDetails');
+                
+                // Находим модальное окно токена
+                const tokenModal = filtered.find(m => m.name === 'tokenDetail');
+                
+                // Если окна токена нет в стеке, добавляем его
+                if (!tokenModal) {
+                  return [...filtered, { name: 'tokenDetail', parent: null }];
+                }
+                
+                return filtered;
+              });
+            };
+          }
+          return newStack;
+        });
+      }, 0);
+    } else {
+      openModal('transactionDetails');
+    }
+  };
+
   // Демо-транзакции для истории
   const demoTransactions = [
     {
@@ -263,6 +346,7 @@ function App() {
       type: 'receive',
       amount: "5,000.00",
       currency: "₽",
+      token: "TON",
       date: "15.04.2023",
       time: "14:32",
       status: "completed",
@@ -275,6 +359,7 @@ function App() {
       type: 'send',
       amount: "1,250.00",
       currency: "₽",
+      token: "TON",
       date: "12.04.2023",
       time: "09:15",
       status: "completed",
@@ -287,6 +372,7 @@ function App() {
       type: 'payment',
       amount: "3,500.00",
       currency: "₽",
+      token: "TON",
       date: "10.04.2023",
       time: "18:47",
       status: "completed",
@@ -299,20 +385,43 @@ function App() {
       type: 'receive',
       amount: "10,000.00",
       currency: "₽",
+      token: "TON",
       date: "05.04.2023",
       time: "12:20",
       status: "completed",
       from: "ООО 'Компания'",
       description: "Зарплата",
       hash: "EQCYrKp4kTyY5xPp8Vra7j5I5JbPR5UfefYaQcF64m9U2R9d",
+    },
+    // Добавляем транзакции для USDT
+    {
+      id: 5,
+      type: 'receive',
+      amount: "1,000.00",
+      currency: "$",
+      token: "USDT",
+      date: "10.04.2023",
+      time: "15:45",
+      status: "completed",
+      from: "Иван С.",
+      description: "Возврат займа",
+      hash: "EQA9rBpkD7VgZ4jK8OFNo2WbWQRhL5jGdDRTuRZD5eJQvTuP",
+    },
+    {
+      id: 6,
+      type: 'send',
+      amount: "500.00",
+      currency: "$",
+      token: "USDT",
+      date: "05.04.2023",
+      time: "11:33",
+      status: "completed",
+      to: "Елена В.",
+      description: "Оплата услуг",
+      hash: "EQCm3HS8lpJ5vBQtD7PQY2BJF3N5KuDkmWkSJ7trMRoH81Z3",
     }
   ];
 
-  const handleTransactionClick = (transaction) => {
-    setSelectedTransaction(transaction);
-    openModal('transactionDetails');
-  };
-  
   // Секция профиля
   const renderProfile = () => {
     // Получаем данные пользователя
@@ -423,55 +532,11 @@ function App() {
           <div className="bg-secondary rounded-xl p-5 text-white">
             <h2 className="text-xl font-bold mb-4">История транзакций</h2>
             {demoTransactions.length > 0 ? (
-              <div className="space-y-3">
-                {demoTransactions.map(transaction => (
-                  <div 
-                    key={transaction.id} 
-                    className="bg-gray-800 rounded-xl p-4 flex items-center justify-between cursor-pointer"
-                    onClick={() => handleTransactionClick(transaction)}
-                  >
-                    <div className="flex items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                        transaction.type === 'receive' ? 'bg-gray-700' : 
-                        transaction.type === 'send' ? 'bg-gray-700' : 'bg-gray-700'
-                      }`}>
-                        {transaction.type === 'receive' && (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-lime-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                        {transaction.type === 'send' && (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                        {transaction.type === 'payment' && (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-200" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                            <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium">
-                          {transaction.type === 'receive' ? 'Получено от ' + transaction.from : 
-                          transaction.type === 'send' ? 'Отправлено ' + transaction.to : 
-                          'Оплата в ' + transaction.to}
-                        </p>
-                        <p className="text-sm text-gray-400">{transaction.date}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={`font-medium ${
-                        transaction.type === 'receive' ? 'text-lime-400' : 
-                        transaction.type === 'send' ? 'text-gray-400' : 'text-gray-200'
-                      }`}>
-                        {transaction.type === 'receive' ? '+' : '-'}{transaction.currency}{transaction.amount}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TransactionsList 
+                transactions={demoTransactions} 
+                onTransactionClick={handleTransactionClick}
+                showTime={true}
+              />
             ) : (
               <p className="text-gray-400">У вас пока нет транзакций</p>
             )}
@@ -565,103 +630,16 @@ function App() {
     }
   };
 
-  const renderTransactionDetails = () => {
+  const renderTransactionDetail = () => {
+    // Удаляем неиспользуемые переменные из деструктуризации
     if (!selectedTransaction) return null;
     
-    const { type, amount, currency, date, time, status, from, to, description, hash } = selectedTransaction;
-    
     return (
-      <div className="space-y-4">
-        <div className="flex justify-center mb-6">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center bg-gray-700`}>
-            {type === 'receive' && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-lime-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
-            {type === 'send' && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            )}
-            {type === 'payment' && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-200" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-              </svg>
-            )}
-          </div>
-        </div>
-        
-        <div className="text-center mb-6">
-          <h3 className="text-2xl font-bold mb-1">
-            <span className={
-              type === 'receive' ? 'text-lime-400' : 
-              type === 'send' ? 'text-gray-400' : 'text-gray-200'
-            }>
-              {type === 'receive' ? '+' : '-'}{currency}{amount}
-            </span>
-          </h3>
-          <p className="text-gray-400">
-            {type === 'receive' ? 'Получено' : 
-             type === 'send' ? 'Отправлено' : 'Оплата'}
-          </p>
-        </div>
-        
-        <div className="bg-gray-800 rounded-xl p-4 space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Статус</span>
-            <span className="text-lime-400 font-medium">
-              {status === 'completed' ? 'Завершено' : 'В обработке'}
-            </span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-400">Дата</span>
-            <span>{date} {time}</span>
-          </div>
-          
-          {type === 'receive' && (
-            <div className="flex justify-between">
-              <span className="text-gray-400">От кого</span>
-              <span>{from}</span>
-            </div>
-          )}
-          
-          {(type === 'send' || type === 'payment') && (
-            <div className="flex justify-between">
-              <span className="text-gray-400">Получатель</span>
-              <span>{to}</span>
-            </div>
-          )}
-          
-          {description && (
-            <div className="flex justify-between">
-              <span className="text-gray-400">Описание</span>
-              <span>{description}</span>
-            </div>
-          )}
-        </div>
-        
-        <div className="bg-gray-800 rounded-xl p-4">
-          <div className="mb-1">
-            <span className="text-gray-400">ID транзакции</span>
-          </div>
-          <div className="break-all text-sm font-mono">
-            {hash}
-          </div>
-          <button 
-            className="text-lime-400 text-sm flex items-center mt-2"
-            onClick={() => handleCopy(hash, 'ID транзакции скопирован!')}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
-              <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 110 2h-2v-2z" />
-            </svg>
-            Скопировать
-          </button>
-        </div>
-      </div>
+      <TransactionDetail 
+        transaction={selectedTransaction} 
+        onClose={() => closeModal()}
+        onCopy={handleCopy}
+      />
     );
   };
 
@@ -721,7 +699,7 @@ function App() {
         title="Детали транзакции"
         onBack={() => closeModal('transactionDetails')}
       >
-        {renderTransactionDetails()}
+        {renderTransactionDetail()}
       </Modal>
       
       {/* Модальное окно с деталями токена */}
