@@ -1,59 +1,79 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTelegram } from '../contexts/TelegramContext';
+import { 
+  HomeIcon, 
+  ClockIcon, 
+  GiftIcon, 
+  UserIcon 
+} from '@heroicons/react/24/outline';
 
 const Footer = ({ activeTab, onTabChange }) => {
+  const { webApp } = useTelegram();
+  const [safeAreaBottom, setSafeAreaBottom] = useState(0);
+
+  // Обнаружение Safe Area на iOS устройствах
+  useEffect(() => {
+    const detectSafeArea = () => {
+      // Проверка на iOS устройства с Home Indicator
+      const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isIPhone = /iPhone/.test(navigator.userAgent) && !window.MSStream;
+      const hasHomeIndicator = isIPhone && (window.screen.height >= 812 || window.screen.width >= 812);
+      
+      if (iOS && hasHomeIndicator) {
+        // Используем CSS переменные или стандартные значения для iPhone с Home Indicator
+        setSafeAreaBottom(34);
+      } else if (webApp?.viewportStableHeight) {
+        // Используем данные от Telegram Web App API для определения безопасной зоны
+        const viewportHeight = webApp.viewportHeight;
+        const stableViewportHeight = webApp.viewportStableHeight;
+        const bottomInset = viewportHeight - stableViewportHeight;
+        
+        if (bottomInset > 0) {
+          setSafeAreaBottom(bottomInset);
+        }
+      }
+    };
+
+    detectSafeArea();
+    window.addEventListener('resize', detectSafeArea);
+    
+    return () => {
+      window.removeEventListener('resize', detectSafeArea);
+    };
+  }, [webApp]);
+
   const tabs = [
     {
       id: 'home',
       label: 'Главная',
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L3 9V20C3 20.5304 3.21071 21.0391 3.58579 21.4142C3.96086 21.7893 4.46957 22 5 22H19C19.5304 22 20.0391 21.7893 20.4142 21.4142C20.7893 21.0391 21 20.5304 21 20V9L12 2Z" fill="currentColor"/>
-          <path d="M9 22V12H15V22" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )
+      icon: <HomeIcon className="w-6 h-6" />
     },
     {
       id: 'history',
       label: 'История',
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-          <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </svg>
-      )
+      icon: <ClockIcon className="w-6 h-6" />
     },
     {
       id: 'airdrop',
       label: 'Airdrop',
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 4L12 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          <path d="M19 9L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          <path d="M5 15L19 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          <circle cx="12" cy="4" r="2" fill="currentColor"/>
-          <circle cx="12" cy="20" r="2" fill="currentColor"/>
-          <circle cx="5" cy="9" r="2" fill="currentColor"/>
-          <circle cx="19" cy="9" r="2" fill="currentColor"/>
-          <circle cx="5" cy="15" r="2" fill="currentColor"/>
-          <circle cx="19" cy="15" r="2" fill="currentColor"/>
-        </svg>
-      )
+      icon: <GiftIcon className="w-6 h-6" />
     },
     {
       id: 'profile',
       label: 'Профиль',
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="8" r="5" fill="currentColor"/>
-          <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="currentColor" strokeWidth="2"/>
-        </svg>
-      )
+      icon: <UserIcon className="w-6 h-6" />
     }
   ];
   
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30">
-      <div className="bg-gray-800 rounded-t-2xl pt-4 pb-safe">
+      <div 
+        className="bg-gray-800 rounded-t-2xl pt-4" 
+        style={{ 
+          paddingBottom: Math.max(16, safeAreaBottom) + 'px',
+          boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.25)'
+        }}
+      >
         <div className="container max-w-md mx-auto">
           <div className="flex justify-around">
             {tabs.map(tab => (
@@ -65,10 +85,18 @@ const Footer = ({ activeTab, onTabChange }) => {
                     : 'text-gray-400 hover:text-gray-200'
                 }`}
                 onClick={() => onTabChange(tab.id)}
+                aria-label={tab.label}
               >
-                <div className={`w-6 h-6 transition-all duration-300 ${
-                  activeTab === tab.id ? 'scale-110' : ''
-                }`}>
+                <div 
+                  className={`transition-all duration-300 ${
+                    activeTab === tab.id ? 'scale-110 filter drop-shadow-glow' : ''
+                  }`}
+                  style={
+                    activeTab === tab.id 
+                      ? { filter: 'drop-shadow(0 0 4px rgb(163 230 53 / 0.7))' } 
+                      : {}
+                  }
+                >
                   {tab.icon}
                 </div>
                 <span className={`text-xs mt-1 transition-opacity duration-300 ${
