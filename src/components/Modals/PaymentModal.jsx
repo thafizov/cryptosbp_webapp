@@ -35,20 +35,21 @@ const PaymentModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Платеж"
+      title="Оплата"
+      onBack={onClose}
       footer={
-        <div className="flex w-full space-x-3">
+        <div className="flex justify-end space-x-3">
           <button 
             onClick={onClose}
-            className="flex-1 py-3 px-4 rounded-xl border border-gray-700 text-white"
+            className="px-5 py-3 border border-gray-700 rounded-xl text-gray-300 hover:bg-gray-800"
           >
-            Назад
+            Отмена
           </button>
           <button 
             onClick={onConfirm}
-            className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-br from-accent-green to-accent-yellow text-black font-medium"
+            className="bg-gradient-to-br from-primary to-lime-300 text-black px-6 py-3 rounded-xl font-medium"
           >
-            Оплатить
+            Подтвердить оплату
           </button>
         </div>
       }

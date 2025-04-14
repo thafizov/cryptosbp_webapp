@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Footer from './components/Footer.jsx';
 import BalanceSection from './components/BalanceSection.jsx';
 import TokenList from './components/TokenList.jsx';
@@ -6,6 +6,7 @@ import SendModal from './components/Modals/SendModal.jsx';
 import DepositModal from './components/Modals/DepositModal.jsx';
 import ScannerModal from './components/Modals/ScannerModal.jsx';
 import PaymentModal from './components/Modals/PaymentModal.jsx';
+import TokenDetailModal from './components/Modals/TokenDetailModal.jsx';
 import Modal from './components/Modal.jsx';
 import Toast from './components/Toast.jsx';
 import { useTelegram } from './contexts/TelegramContext';
@@ -14,7 +15,7 @@ import copyToClipboard from './utils/clipboard';
 import './index.css';
 
 function App() {
-  const { user, isLoading } = useTelegram();
+  const { user, isLoading, webApp } = useTelegram();
   const { toast, showToast, hideToast } = useToast();
   const [modals, setModals] = useState({
     send: false,
@@ -22,12 +23,17 @@ function App() {
     scanner: false,
     payment: false,
     transactionDetails: false,
+    tokenDetail: false
   });
+  
+  // Добавляем стек навигации модальных окон
+  const [modalStack, setModalStack] = useState([]);
   
   const [activeTab, setActiveTab] = useState('home');
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [paymentData, setPaymentData] = useState(null);
   const [selectedCrypto, setSelectedCrypto] = useState(null);
+  const [selectedTokenData, setSelectedTokenData] = useState(null);
 
   // Функция для копирования текста с выводом уведомления
   const handleCopy = async (text, message = "Скопировано!") => {
@@ -39,17 +45,99 @@ function App() {
     }
   };
 
-  const openModal = (modalName) => {
+  // Обновляем функцию для открытия модальных окон с возможностью указать родительское окно
+  const openModal = (modalName, parentModal = null) => {
     setModals(prev => ({ ...prev, [modalName]: true }));
+    
+    // Добавляем модальное окно в стек с указанием родителя
+    setModalStack(prev => [...prev, { name: modalName, parent: parentModal }]);
+    
+    // Если используется в Telegram, настраиваем кнопку "Назад"
+    if (webApp) {
+      webApp.BackButton.show();
+    }
   };
 
+  // Обновляем функцию закрытия модального окна
   const closeModal = (modalName) => {
-    setModals(prev => ({ ...prev, [modalName]: false }));
-    // Сбрасываем выбранную криптовалюту при закрытии модального окна
+    // Проверяем, есть ли окно в стеке
+    const modalInStack = modalStack.find(modal => modal.name === modalName);
+    
+    // Если окно есть в стеке и у него есть родитель, открываем родительское окно
+    if (modalInStack && modalInStack.parent) {
+      setModals(prev => ({ 
+        ...prev, 
+        [modalName]: false,
+        [modalInStack.parent]: true 
+      }));
+    } else {
+      // Иначе просто закрываем окно
+      setModals(prev => ({ ...prev, [modalName]: false }));
+    }
+    
+    // Удаляем окно из стека
+    setModalStack(prev => prev.filter(modal => modal.name !== modalName));
+    
+    // Если стек пуст после удаления, скрываем кнопку "Назад" в Telegram
+    if (webApp && modalStack.length <= 1) {
+      webApp.BackButton.hide();
+    }
+    
+    // Сбрасываем выбранную криптовалюту при закрытии модальных окон
     if (modalName === 'deposit' || modalName === 'send') {
       setSelectedCrypto(null);
     }
+    if (modalName === 'tokenDetail') {
+      setSelectedTokenData(null);
+    }
   };
+
+  // Функция для возврата к предыдущему окну
+  const goBackToPreviousModal = () => {
+    if (modalStack.length > 0) {
+      // Получаем текущее окно (последнее в стеке)
+      const currentModal = modalStack[modalStack.length - 1];
+      
+      // Закрываем текущее окно
+      setModals(prev => ({ ...prev, [currentModal.name]: false }));
+      
+      // Удаляем его из стека
+      const newStack = modalStack.slice(0, -1);
+      setModalStack(newStack);
+      
+      // Если у окна был родитель, открываем родительское окно
+      if (currentModal.parent) {
+        setModals(prev => ({ ...prev, [currentModal.parent]: true }));
+      }
+      
+      // Скрываем кнопку "Назад" Telegram, если больше нет окон в стеке
+      if (webApp && newStack.length === 0) {
+        webApp.BackButton.hide();
+      }
+    }
+  };
+
+  // Инициализируем обработчик кнопки "Назад" Telegram
+  useEffect(() => {
+    if (webApp) {
+      // Настраиваем обработчик кнопки "Назад" в Telegram
+      webApp.BackButton.onClick(goBackToPreviousModal);
+      
+      // Показываем кнопку "Назад", если есть открытые модальные окна
+      if (modalStack.length > 0) {
+        webApp.BackButton.show();
+      } else {
+        webApp.BackButton.hide();
+      }
+    }
+    
+    return () => {
+      // Очищаем обработчик при размонтировании компонента
+      if (webApp) {
+        webApp.BackButton.offClick(goBackToPreviousModal);
+      }
+    };
+  }, [modalStack, webApp]);
 
   const handleScanSuccess = (result) => {
     console.log('QR код отсканирован:', result);
@@ -121,15 +209,33 @@ function App() {
     }, 1000);
   };
 
-  // Пользовательские обработчики для кнопок в BalanceSection
+  // Обновляем обработчики, чтобы указывать иерархию модальных окон
   const handleSend = () => openModal('send');
   const handleReceive = () => openModal('deposit');
   const handleScan = () => openModal('scanner');
 
-  // Обработчик для клика по токену
-  const handleTokenClick = (symbol) => {
+  // Обновляем обработчик для клика по токену
+  const handleTokenClick = (symbol, tokenData) => {
     setSelectedCrypto(symbol);
-    openModal('deposit');
+    setSelectedTokenData(tokenData);
+    openModal('tokenDetail');
+  };
+
+  // Обновляем обработчики для токена из модального окна
+  const handleTokenDeposit = (symbol) => {
+    setSelectedCrypto(symbol);
+    // Корректно открываем новое окно, указывая родительское
+    openModal('deposit', 'tokenDetail');
+    // Скрываем родительское окно без его удаления из стека
+    setModals(prev => ({ ...prev, tokenDetail: false }));
+  };
+
+  const handleTokenSend = (symbol) => {
+    setSelectedCrypto(symbol);
+    // Корректно открываем новое окно, указывая родительское
+    openModal('send', 'tokenDetail');
+    // Скрываем родительское окно без его удаления из стека
+    setModals(prev => ({ ...prev, tokenDetail: false }));
   };
 
   // Обработчик для клика по токену с выбором действия (контекстное меню)
@@ -305,6 +411,7 @@ function App() {
         return (
           <div className="space-y-6">
             <BalanceSection onSend={handleSend} onReceive={handleReceive} onScan={handleScan} />
+            
             <TokenList 
               onTokenClick={handleTokenClick} 
               onTokenContextClick={handleTokenContextClick}
@@ -422,23 +529,6 @@ function App() {
                       </div>
                     </div>
                     <span className="text-gray-200 font-medium ml-2 whitespace-nowrap">+100 XP</span>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-800 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium whitespace-nowrap">Mint NFT</p>
-                        <p className="text-sm text-gray-400">+200 XP за каждый NFT</p>
-                      </div>
-                    </div>
-                    <span className="text-gray-400 font-medium ml-2 whitespace-nowrap">+200 XP</span>
                   </div>
                 </div>
               </div>
@@ -629,9 +719,22 @@ function App() {
         isOpen={modals.transactionDetails}
         onClose={() => closeModal('transactionDetails')}
         title="Детали транзакции"
+        onBack={() => closeModal('transactionDetails')}
       >
         {renderTransactionDetails()}
       </Modal>
+      
+      {/* Модальное окно с деталями токена */}
+      <TokenDetailModal
+        isOpen={modals.tokenDetail}
+        onClose={() => closeModal('tokenDetail')}
+        symbol={selectedCrypto}
+        tokenData={selectedTokenData}
+        transactions={demoTransactions}
+        onTransactionClick={handleTransactionClick}
+        onDeposit={handleTokenDeposit}
+        onSend={handleTokenSend}
+      />
     </div>
   );
 }

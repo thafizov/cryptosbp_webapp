@@ -168,6 +168,7 @@ const SendModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null })
       isOpen={isOpen}
       onClose={onClose}
       title="Отправить"
+      onBack={onClose}
       footer={renderFooter()}
       fullScreen={fullScreen}
     >

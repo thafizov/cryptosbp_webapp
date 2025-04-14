@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const TokenItem = ({ token, symbol, amount, value, change, icon, onTokenClick }) => {
+const TokenItem = ({ token, symbol, amount, value, change, icon, onTokenClick, onTokenContextClick, tokenData }) => {
   const isPositive = change >= 0;
+  
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    if (onTokenContextClick) {
+      onTokenContextClick(e, symbol);
+    }
+    return false;
+  };
   
   return (
     <div 
       className="flex items-center justify-between py-4 border-b border-gray-800 hover:bg-gray-800/50 transition-colors cursor-pointer"
-      onClick={() => onTokenClick && onTokenClick(symbol)}
+      onClick={() => onTokenClick && onTokenClick(symbol, tokenData)}
+      onContextMenu={handleContextMenu}
     >
       <div className="flex items-center">
         <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mr-3 overflow-hidden">
@@ -31,9 +40,7 @@ const TokenItem = ({ token, symbol, amount, value, change, icon, onTokenClick })
   );
 };
 
-const TokenList = ({ onTokenClick }) => {
-  const [activeTab, setActiveTab] = useState('crypto');
-  
+const TokenList = ({ onTokenClick, onTokenContextClick }) => {
   // Примеры токенов для демонстрации - только TON и USDT с локальными SVG
   const cryptoTokens = [
     { 
@@ -56,39 +63,21 @@ const TokenList = ({ onTokenClick }) => {
 
   return (
     <div className="bg-secondary rounded-xl overflow-hidden">
-      <div className="flex border-b border-gray-800">
-        <button 
-          className={`flex-1 py-3 text-center ${activeTab === 'crypto' ? 'bg-gradient-to-r from-lime-300 to-green-400 text-black font-medium' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('crypto')}
-        >
-          Crypto
-        </button>
-        <button 
-          className={`flex-1 py-3 text-center ${activeTab === 'nfts' ? 'bg-gradient-to-r from-lime-300 to-green-400 text-black font-medium' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('nfts')}
-        >
-          NFTs
-        </button>
-      </div>
       <div className="px-4">
-        {activeTab === 'crypto' ? (
-          cryptoTokens.map((token, index) => (
-            <TokenItem 
-              key={index}
-              token={token.token}
-              symbol={token.symbol}
-              amount={token.amount}
-              value={token.value}
-              change={token.change}
-              icon={token.icon}
-              onTokenClick={onTokenClick}
-            />
-          ))
-        ) : (
-          <div className="py-10 text-center text-gray-400">
-            <p>У вас пока нет NFT</p>
-          </div>
-        )}
+        {cryptoTokens.map((token, index) => (
+          <TokenItem 
+            key={index}
+            token={token.token}
+            symbol={token.symbol}
+            amount={token.amount}
+            value={token.value}
+            change={token.change}
+            icon={token.icon}
+            onTokenClick={onTokenClick}
+            onTokenContextClick={onTokenContextClick}
+            tokenData={token}
+          />
+        ))}
       </div>
     </div>
   );

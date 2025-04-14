@@ -1,37 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
-const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-  
+const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, onBack }) => {
+  // Блокируем прокрутку на body когда модальное окно открыто
   useEffect(() => {
     if (isOpen) {
-      setIsAnimating(true);
-      // Блокируем прокрутку на body когда модальное окно открыто
       document.body.style.overflow = 'hidden';
-    } else {
-      // Добавляем небольшую задержку перед удалением модального окна из DOM
-      const timer = setTimeout(() => {
-        setIsAnimating(false);
-        // Возвращаем прокрутку когда модальное окно закрыто
-        document.body.style.overflow = '';
-      }, 300); // Это должно соответствовать длительности анимации
-      
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
   
-  // Если модальное окно закрыто и нет анимации - не рендерим ничего
-  if (!isOpen && !isAnimating) return null;
+  // Если модальное окно закрыто - не рендерим ничего
+  if (!isOpen) return null;
   
-  // Определяем классы анимации
-  const backdropClasses = `fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-300 ${
-    isOpen ? 'opacity-100' : 'opacity-0'
-  }`;
-  
-  const modalClasses = `fixed inset-0 z-50 flex items-start justify-center p-0 transition-all duration-300 ${
-    isOpen ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-6 opacity-0 scale-95'
-  }`;
-
   // Изменены стили для полноэкранного режима
   const containerClasses = fullScreen 
     ? `relative bg-secondary w-full h-[100vh] max-h-[100vh] flex flex-col overflow-hidden` 
@@ -40,10 +23,10 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) 
   return (
     <>
       {/* Затемненный фон */}
-      <div className={backdropClasses} onClick={onClose}></div>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={onBack || onClose}></div>
       
       {/* Модальное окно */}
-      <div className={modalClasses}>
+      <div className="fixed inset-0 z-50 flex items-start justify-center p-0">
         <div 
           className={containerClasses}
           onClick={e => e.stopPropagation()}
@@ -51,15 +34,18 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true }) 
           {/* Заголовок */}
           {title && (
             <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-              <h2 className="text-lg font-medium">{title}</h2>
+              {/* Кнопка "Назад" - всегда видима */}
               <button 
-                onClick={onClose}
-                className="p-1 rounded-full hover:bg-gray-700 transition-colors"
+                onClick={onBack || onClose} 
+                className="p-1 rounded-full hover:bg-gray-700 transition-colors mr-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l5.293 5.293a1 1 0 010 1.414z" clipRule="evenodd" />
                 </svg>
               </button>
+              <h2 className="text-lg font-medium flex-1 text-center">{title}</h2>
+              {/* Пустой элемент для выравнивания заголовка по центру */}
+              <div className="w-6"></div>
             </div>
           )}
           

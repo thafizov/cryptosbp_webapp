@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../Modal';
 
-const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null }) => {
+const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null, onCopy }) => {
   const [step, setStep] = useState(1);
   const [selectedCrypto, setSelectedCrypto] = useState('TON');
+  
+  const walletAddress = 'EQBIhPuWmjT7fP-VomuTWg5aAr7so3FZUHwLQTogc9y7TP-P';
 
   // Устанавливаем initialCrypto при открытии модального окна
   useEffect(() => {
@@ -24,6 +26,13 @@ const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null
 
   const handleBack = () => {
     setStep(1);
+  };
+  
+  // Обработчик копирования адреса
+  const handleCopyAddress = () => {
+    if (onCopy) {
+      onCopy(walletAddress, 'Адрес скопирован!');
+    }
   };
 
   const cryptoOptions = [
@@ -75,11 +84,11 @@ const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null
           <p className="text-gray-400">Отправьте {selectedCrypto} на этот адрес (TON):</p>
         </div>
         <div className="bg-gray-800 p-4 rounded-xl mb-3 break-all">
-          <code className="font-mono text-white">EQBIhPuWmjT7fP-VomuTWg5aAr7so3FZUHwLQTogc9y7TP-P</code>
+          <code className="font-mono text-white">{walletAddress}</code>
         </div>
         <button 
           className="text-primary flex items-center mx-auto"
-          onClick={() => navigator.clipboard.writeText('EQBIhPuWmjT7fP-VomuTWg5aAr7so3FZUHwLQTogc9y7TP-P')}
+          onClick={handleCopyAddress}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
             <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
@@ -137,6 +146,7 @@ const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null
       isOpen={isOpen}
       onClose={onClose}
       title="Пополнить"
+      onBack={onClose}
       footer={renderFooter()}
       fullScreen={fullScreen}
     >

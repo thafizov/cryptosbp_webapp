@@ -141,12 +141,6 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
     };
   }, [scanning, handleSuccessfulScan]);
 
-  // Обработчик закрытия модального окна
-  const handleClose = () => {
-    stopCamera();
-    onClose();
-  };
-
   // Эффект для запуска/остановки сканера
   useEffect(() => {
     if (isOpen) {
@@ -163,8 +157,9 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
       title="Сканировать QR-код"
+      onBack={onClose}
       fullScreen={fullScreen}
       footer={
         <div className="flex justify-between w-full">
@@ -178,7 +173,7 @@ const ScannerModal = ({ isOpen, onClose, onScanSuccess, fullScreen = true }) => 
             Загрузить из галереи
           </button>
           <button 
-            onClick={handleClose}
+            onClick={onClose}
             className="bg-gradient-to-br from-primary to-lime-300 text-black px-6 py-3 rounded-xl font-medium"
           >
             Отмена

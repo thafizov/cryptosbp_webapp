@@ -30,4 +30,13 @@ yarn-error.log*
 .env
 
 # Temporary files
-/temp_setup/webapp 
+/temp_setup/webapp
+
+# Задачи и документация
+задача_*.md
+*.md
+QRScanner*.js
+
+# Telegram бот
+/telegram_bot
+/.venv 
