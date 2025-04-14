@@ -137,13 +137,13 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
       } catch (err) {
         console.error('Ошибка инициализации камеры:', err);
         if (err.name === 'NotAllowedError') {
-          setError('Для работы сканера необходимо разрешить доступ к камере');
+          setError('Для работы сканера необходимо разрешить доступ к камере. Вы можете загрузить QR-код из файла.');
         } else if (err.name === 'NotFoundError') {
-          setError('Камера не найдена на устройстве');
+          setError('Камера не найдена на устройстве. Используйте загрузку QR-кода из файла.');
         } else if (err.name === 'NotReadableError') {
-          setError('Камера занята другим приложением');
+          setError('Камера занята другим приложением. Попробуйте загрузить QR-код из файла.');
         } else {
-          setError(`Ошибка инициализации камеры: ${err.message}`);
+          setError(`Ошибка инициализации камеры: ${err.message}. Вы можете использовать загрузку QR-кода из файла.`);
         }
       } finally {
         setIsLoading(false);
@@ -220,38 +220,49 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
           </div>
 
           {/* Основная область сканирования */}
-          <div className="relative flex-1 bg-black">
+          <div className="relative flex-1 bg-black overflow-hidden">
             <video 
               ref={videoRef} 
-              className="absolute inset-0 h-full w-full"
+              className="absolute inset-0 h-full w-full object-cover"
               playsInline 
               muted
-              style={{
-                objectFit: 'contain'
-              }}
             />
             <canvas
               ref={canvasRef}
               className="hidden"
             />
             
-            {/* Рамка сканирования */}
+            {/* Затемненная область с вырезом для сканирования */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative aspect-square w-64 rounded-2xl border-2 border-white/50">
-                <div className="absolute -inset-1 rounded-2xl border-2 border-white/20" />
-                <div className="absolute -inset-4 rounded-2xl border border-white/10" />
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+              
+              {/* Вырез для области сканирования */}
+              <div className="relative aspect-square w-64">
+                {/* Прозрачная область сканирования (вырез) */}
+                <div className="absolute inset-0 rounded-2xl box-content border-2 border-white">
+                  {/* Углы рамки */}
+                  <div className="absolute -left-1 -top-1 h-6 w-6 border-l-2 border-t-2 border-white rounded-tl-md" />
+                  <div className="absolute -right-1 -top-1 h-6 w-6 border-r-2 border-t-2 border-white rounded-tr-md" />
+                  <div className="absolute -bottom-1 -left-1 h-6 w-6 border-b-2 border-l-2 border-white rounded-bl-md" />
+                  <div className="absolute -bottom-1 -right-1 h-6 w-6 border-b-2 border-r-2 border-white rounded-br-md" />
+                </div>
                 
-                {/* Углы рамки */}
-                <div className="absolute -left-1 -top-1 h-4 w-4 border-l-2 border-t-2 border-white" />
-                <div className="absolute -right-1 -top-1 h-4 w-4 border-r-2 border-t-2 border-white" />
-                <div className="absolute -bottom-1 -left-1 h-4 w-4 border-b-2 border-l-2 border-white" />
-                <div className="absolute -bottom-1 -right-1 h-4 w-4 border-b-2 border-r-2 border-white" />
+                {/* Маска для вырезания отверстия */}
+                <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  <defs>
+                    <mask id="scan-area-mask">
+                      <rect width="100" height="100" fill="white" />
+                      <rect x="5" y="5" width="90" height="90" rx="10" fill="black" />
+                    </mask>
+                  </defs>
+                  <rect width="100" height="100" fill="rgba(0,0,0,0.7)" mask="url(#scan-area-mask)" />
+                </svg>
               </div>
             </div>
 
             {/* Подсказка */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-              <p className="text-center text-sm text-white/80">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
+              <p className="text-center text-sm text-white/90 font-medium">
                 Наведите камеру на QR-код или загрузите изображение
               </p>
             </div>
@@ -278,6 +289,35 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
               <div className="text-center">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 <p className="mt-2 text-sm text-white">Инициализация камеры...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Сообщение об ошибке доступа к камере */}
+          {error && !isLoading && (
+            <div className="absolute top-20 inset-x-0 mx-auto max-w-md bg-red-50 p-4 rounded-lg shadow-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-red-800">{error}</p>
+                  <p className="mt-1 text-sm text-red-700">
+                    Вы можете загрузить QR-код из файла или закрыть сканер
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="ml-auto -mx-1.5 -my-1.5 flex-shrink-0 rounded-lg p-1.5 text-red-500 hover:bg-red-100 focus:ring-2 focus:ring-red-500"
+                  onClick={() => setError(null)}
+                >
+                  <span className="sr-only">Закрыть</span>
+                  <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}

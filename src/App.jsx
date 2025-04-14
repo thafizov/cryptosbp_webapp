@@ -495,13 +495,6 @@ function App() {
                 <span className="text-xs md:text-sm">{user?.language_code?.toUpperCase() || 'RU'}</span>
               </div>
             </div>
-            
-            <div className="bg-gray-800 rounded-lg adaptive-p-4 transition-colors duration-300 hover:bg-gray-700">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Дата регистрации</span>
-                <span className="text-xs md:text-sm">21.04.2023</span>
-              </div>
-            </div>
           </>
         )}
       </div>

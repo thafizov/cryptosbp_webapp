@@ -227,4 +227,759 @@ body {
   right: 0;
   height: 50px;
   background-color: #020203;  /* Тот же цвет, что и фон приложения */
+}
+
+/* Эффект переливающейся карты как у Сбербанка */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 0%;
+    background-size: 250% 250%;
+  }
+  25% {
+    background-position: 50% 50%;
+    background-size: 300% 300%;
+  }
+  50% {
+    background-position: 100% 100%;
+    background-size: 250% 250%;
+  }
+  75% {
+    background-position: 50% 50%;
+    background-size: 300% 300%;
+  }
+  100% {
+    background-position: 0% 0%;
+    background-size: 250% 250%;
+  }
+}
+
+/* 3D эффект для карточки */
+@keyframes card-breathing {
+  0% {
+    transform: perspective(1000px) rotateX(2deg) rotateY(0deg) translateZ(0);
+    box-shadow: 
+      0 10px 30px rgba(137, 255, 68, 0.3),
+      0 0 50px rgba(137, 255, 68, 0.1) inset;
+  }
+  25% {
+    transform: perspective(1000px) rotateX(0deg) rotateY(2deg) translateZ(5px);
+    box-shadow: 
+      0 15px 40px rgba(137, 255, 68, 0.4),
+      0 0 60px rgba(137, 255, 68, 0.15) inset;
+  }
+  50% {
+    transform: perspective(1000px) rotateX(-2deg) rotateY(0deg) translateZ(10px);
+    box-shadow: 
+      0 20px 35px rgba(137, 255, 68, 0.35),
+      0 0 55px rgba(137, 255, 68, 0.2) inset;
+  }
+  75% {
+    transform: perspective(1000px) rotateX(0deg) rotateY(-2deg) translateZ(5px);
+    box-shadow: 
+      0 15px 40px rgba(137, 255, 68, 0.4),
+      0 0 60px rgba(137, 255, 68, 0.15) inset;
+  }
+  100% {
+    transform: perspective(1000px) rotateX(2deg) rotateY(0deg) translateZ(0);
+    box-shadow: 
+      0 10px 30px rgba(137, 255, 68, 0.3),
+      0 0 50px rgba(137, 255, 68, 0.1) inset;
+  }
+}
+
+/* Настройка 3D пространства */
+.shimmer-card-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform: translate3d(0, 0, 0);
+  /* Устраняем возможные проблемы с мерцанием на мобильных устройствах */
+  -webkit-perspective: 1000;
+  -moz-perspective: 1000;
+}
+
+/* Эффект свечения вокруг карты */
+.shimmer-card-container::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: radial-gradient(
+    circle at center,
+    rgba(137, 255, 68, 0.3) 0%,
+    rgba(137, 255, 68, 0.1) 60%,
+    rgba(137, 255, 68, 0) 100%
+  );
+  border-radius: 1.5rem;
+  filter: blur(15px);
+  z-index: -1;
+  animation: glow-pulse 6s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+}
+
+.shimmer-card {
+  background: linear-gradient(-45deg, 
+    rgba(137, 255, 68, 1) 0%, 
+    rgba(170, 253, 80, 1) 15%, 
+    rgba(230, 252, 91, 1) 30%, 
+    rgba(170, 253, 80, 1) 45%, 
+    rgba(137, 255, 68, 0.9) 60%,
+    rgba(200, 254, 85, 1) 75%, 
+    rgba(230, 252, 91, 0.9) 90%,
+    rgba(137, 255, 68, 1) 100%);
+  background-size: 300% 300%;
+  animation: 
+    gradient-shift 20s ease-in-out infinite,
+    card-breathing 15s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+  box-shadow: 
+    0 20px 50px rgba(137, 255, 68, 0.4),
+    0 5px 15px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 30px rgba(137, 255, 68, 0.15) inset;
+  -webkit-transform: translate3d(0, 0, 0);
+  z-index: 0;
+}
+
+/* Добавляем эффект виньетки для большей глубины */
+.shimmer-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(135deg, 
+      rgba(255, 255, 255, 0) 0%, 
+      rgba(255, 255, 255, 0.05) 25%,
+      rgba(255, 255, 255, 0.1) 50%, 
+      rgba(255, 255, 255, 0.05) 75%,
+      rgba(255, 255, 255, 0) 100%),
+    radial-gradient(
+      ellipse at center,
+      transparent 0%,
+      rgba(0, 0, 0, 0) 50%,
+      rgba(0, 0, 0, 0.15) 100%
+    );
+  background-size: 400% 400%, 100% 100%;
+  animation: gradient-shift 18s ease-in-out infinite;
+  z-index: 1;
+  pointer-events: none;
+  transform: translateZ(20px);
+  border-radius: 1rem;
+}
+
+/* Добавляем бликовые блики на краях карты */
+.shimmer-card-edge-light {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  z-index: 6;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  transform: translateZ(30px);
+  border-radius: 1rem;
+  animation: edge-light-shift 10s ease-in-out infinite;
+}
+
+@keyframes edge-light-shift {
+  0% {
+    opacity: 0.3;
+    background-position: 0% 0%;
+  }
+  25% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.5;
+    background-position: 100% 100%;
+  }
+  75% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0.3;
+    background-position: 0% 0%;
+  }
+}
+
+/* Улучшенные 3D эффекты для частиц */
+.shimmer-card-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 4;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.shimmer-card-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  z-index: 5;
+  pointer-events: none;
+  filter: blur(1px);
+}
+
+.shimmer-card-particle:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation: floating-particle 12s ease-in-out infinite;
+}
+
+.shimmer-card-particle:nth-child(2) {
+  top: 40%;
+  left: 70%;
+  width: 6px;
+  height: 6px;
+  animation: floating-particle 14s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.shimmer-card-particle:nth-child(3) {
+  top: 70%;
+  left: 30%;
+  width: 10px;
+  height: 10px;
+  animation: floating-particle 16s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.shimmer-card-particle:nth-child(4) {
+  top: 30%;
+  left: 40%;
+  width: 5px;
+  height: 5px;
+  animation: floating-particle 13s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.shimmer-card-particle:nth-child(5) {
+  top: 60%;
+  left: 60%;
+  width: 7px;
+  height: 7px;
+  animation: floating-particle 15s ease-in-out infinite;
+  animation-delay: 2.5s;
+}
+
+/* 3D эффект блика */
+@keyframes shine-effect-3d {
+  0% {
+    left: -150%;
+    opacity: 0;
+    transform: translateZ(30px) rotateY(30deg);
+  }
+  10% {
+    opacity: 0.1;
+  }
+  20% {
+    opacity: 0.2;
+    transform: translateZ(50px) rotateY(20deg);
+  }
+  50% {
+    opacity: 0.3;
+    transform: translateZ(70px) rotateY(10deg);
+  }
+  80% {
+    opacity: 0.2;
+    transform: translateZ(50px) rotateY(-10deg);
+  }
+  90% {
+    opacity: 0.1;
+  }
+  100% {
+    left: 250%;
+    opacity: 0;
+    transform: translateZ(30px) rotateY(-30deg);
+  }
+}
+
+.shimmer-card::before {
+  content: "";
+  position: absolute;
+  top: -80%;
+  left: -150%;
+  width: 80%;
+  height: 250%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 30%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(35deg) translateZ(40px);
+  animation: shine-effect-3d 16s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 2;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+/* Второй 3D блик */
+@keyframes shine-effect-3d-2 {
+  0% {
+    left: -150%;
+    opacity: 0;
+    transform: translateZ(20px) rotateY(-20deg);
+  }
+  50% {
+    opacity: 0;
+  }
+  60% {
+    opacity: 0.1;
+    transform: translateZ(40px) rotateY(-10deg);
+  }
+  75% {
+    opacity: 0.2;
+    transform: translateZ(60px) rotateY(0deg);
+  }
+  90% {
+    opacity: 0.1;
+    transform: translateZ(40px) rotateY(10deg);
+  }
+  100% {
+    left: 250%;
+    opacity: 0;
+    transform: translateZ(20px) rotateY(20deg);
+  }
+}
+
+.shimmer-card-second-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.shimmer-card-second-shine::before {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -150%;
+  width: 70%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.05) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(25deg) translateZ(30px);
+  animation: shine-effect-3d-2 18s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+/* 3D волновой эффект */
+@keyframes wave-effect-3d {
+  0% {
+    transform: translateY(0) translateZ(15px) scaleY(1);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translateY(3px) translateZ(20px) scaleY(0.97);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(5px) translateZ(25px) scaleY(0.95);
+    opacity: 0.8;
+  }
+  75% {
+    transform: translateY(3px) translateZ(20px) scaleY(0.97);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0) translateZ(15px) scaleY(1);
+    opacity: 0.5;
+  }
+}
+
+.shimmer-card-wave-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.03) 20%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 80%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: wave-effect-3d 14s ease-in-out infinite;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.7;
+  transform-style: preserve-3d;
+}
+
+/* 3D горизонтальный волновой эффект */
+@keyframes horizontal-wave-3d {
+  0% {
+    transform: translateX(0) translateZ(10px) scaleX(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateX(7px) translateZ(20px) scaleX(0.98);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(0) translateZ(10px) scaleX(1);
+    opacity: 0.3;
+  }
+}
+
+.shimmer-card-horizontal-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: horizontal-wave-3d 10s ease-in-out infinite;
+  z-index: 2;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+/* Эффект плавающих частиц */
+@keyframes floating-particle {
+  0% {
+    transform: translate(0, 0) scale(1) translateZ(30px);
+    opacity: 0.2;
+  }
+  25% {
+    transform: translate(10px, 10px) scale(1.1) translateZ(40px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(20px, 5px) scale(1.2) translateZ(50px);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translate(10px, -5px) scale(1.1) translateZ(40px);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(0, 0) scale(1) translateZ(30px);
+    opacity: 0.2;
+  }
+}
+
+/* Убираем микролинии между слоями */
+.shimmer-card::before,
+.shimmer-card::after,
+.shimmer-card-second-shine::before,
+.shimmer-card-wave-effect,
+.shimmer-card-horizontal-wave,
+.shimmer-card-edge-light {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+/* Корректировка стилей для кнопок на карточке */
+.shimmer-card .action-button {
+  @apply w-12 h-12 rounded-full flex items-center justify-center mb-2;
+  background: linear-gradient(to bottom right, #000000, #333333);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transform: translateZ(30px);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.shimmer-card .action-button svg {
+  color: white;
+  fill: white;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+.shimmer-card .action-button-container span {
+  color: rgba(0, 0, 0, 0.9);
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.3);
+  transform: translateZ(25px);
+}
+
+/* Исправления для мобильных устройств */
+@media (max-width: 768px) {
+  .shimmer-card {
+    animation: gradient-shift 20s ease-in-out infinite;
+  }
+}
+
+.shimmer-card .balance-text {
+  color: rgba(0, 0, 0, 0.9);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.2);
+  transform: translateZ(20px);
+}
+
+/* Природный двигающийся фон для карточки с основными цветами */
+.nature-card-container {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.nature-card-container::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: radial-gradient(
+    circle at center,
+    rgba(137, 255, 68, 0.5) 0%,
+    rgba(137, 255, 68, 0.2) 60%,
+    rgba(137, 255, 68, 0) 100%
+  );
+  border-radius: 1.5rem;
+  filter: blur(15px);
+  z-index: -1;
+  animation: glow-pulse 6s ease-in-out infinite;
+}
+
+.nature-card {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.2));
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(4px);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  z-index: 1;
+}
+
+/* Движущиеся слои природного фона с основными цветами */
+.nature-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%2389FF44" fill-opacity="0.5" d="M0,128L48,133.3C96,139,192,149,288,144C384,139,480,117,576,117.3C672,117,768,139,864,170.7C960,203,1056,245,1152,261.3C1248,277,1344,267,1392,261.3L1440,256L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>')
+    bottom center no-repeat,
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23B1FF77" fill-opacity="0.6" d="M0,96L48,117.3C96,139,192,181,288,186.7C384,192,480,160,576,154.7C672,149,768,171,864,181.3C960,192,1056,192,1152,181.3C1248,171,1344,149,1392,138.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>')
+    bottom center no-repeat,
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23E6FC5B" fill-opacity="0.8" d="M0,64L48,74.7C96,85,192,107,288,128C384,149,480,171,576,186.7C672,203,768,213,864,197.3C960,181,1056,139,1152,138.7C1248,139,1344,181,1392,202.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>')
+    bottom center no-repeat,
+    linear-gradient(to bottom, rgba(137, 255, 68, 0.7), rgba(230, 252, 91, 0.9));
+  background-size: 200% 80%, 180% 65%, 160% 50%, 100% 100%;
+  z-index: -1;
+  animation: wave-animation 15s ease-in-out infinite alternate;
+}
+
+@keyframes wave-animation {
+  0% {
+    background-position: 
+      right bottom, 
+      left bottom, 
+      40% bottom;
+  }
+  50% {
+    background-position: 
+      left bottom, 
+      right bottom, 
+      60% bottom;
+  }
+  100% {
+    background-position: 
+      right bottom, 
+      left bottom, 
+      40% bottom;
+  }
+}
+
+/* Летающие элементы фона (как пыльца или листья) */
+.nature-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 20%),
+    radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 20%),
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(circle at 20% 70%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 20%);
+  background-size: 20% 20%, 15% 15%, 25% 25%, 20% 20%;
+  z-index: 0;
+  animation: shine-movement 12s ease-in-out infinite alternate;
+}
+
+@keyframes shine-movement {
+  0% {
+    background-position: 
+      30% 20%, 
+      70% 60%, 
+      50% 40%, 
+      20% 70%;
+  }
+  50% {
+    background-position: 
+      35% 25%, 
+      65% 65%, 
+      55% 35%, 
+      25% 75%;
+  }
+  100% {
+    background-position: 
+      25% 15%, 
+      75% 55%, 
+      45% 45%, 
+      15% 65%;
+  }
+}
+
+/* Стиль для текста на природной карте */
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Стиль для кнопок на природной карте */
+.nature-button {
+  @apply w-12 h-12 rounded-full flex items-center justify-center mb-2;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+/* Эффект переливания для карточки баланса */
+.bg-gradient-to-br.from-accent-green.to-accent-yellow {
+  background: linear-gradient(-45deg, 
+    rgba(137, 255, 68, 1) 0%, 
+    rgba(170, 253, 80, 1) 15%, 
+    rgba(230, 252, 91, 1) 30%, 
+    rgba(170, 253, 80, 1) 45%, 
+    rgba(137, 255, 68, 0.9) 60%,
+    rgba(200, 254, 85, 1) 75%, 
+    rgba(230, 252, 91, 0.9) 90%,
+    rgba(137, 255, 68, 1) 100%);
+  background-size: 300% 300%;
+  animation: gradient-shift 15s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Декоративный светящийся эффект на карточке */
+.bg-gradient-to-br.from-accent-green.to-accent-yellow::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  animation: light-shift 10s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes light-shift {
+  0% {
+    transform: rotate(0deg);
+    opacity: 0.5;
+  }
+  25% {
+    opacity: 0.3;
+  }
+  50% {
+    transform: rotate(180deg);
+    opacity: 0.5;
+  }
+  75% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: rotate(360deg);
+    opacity: 0.5;
+  }
 } 
