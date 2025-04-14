@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import jsQR from 'jsqr';
 
 /**
@@ -12,10 +12,68 @@ import jsQR from 'jsqr';
  */
 export function QRScanner({ isOpen, onClose, onScanSuccess }) {
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
+
+  // Функция для обработки кадров
+  const processVideo = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+
+    // Устанавливаем размеры canvas равными размерам видео
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Копируем кадр из видео на canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Получаем данные изображения
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    
+    try {
+      // Пытаемся найти QR-код
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      
+      if (code) {
+        console.log('QR-код найден:', code.data);
+        setScanResult(code.data);
+        setShowResult(true);
+        return; // Прекращаем сканирование после нахождения кода
+      }
+    } catch (error) {
+      console.error('Ошибка при обработке QR-кода:', error);
+    }
+
+    // Продолжаем сканирование
+    requestAnimationFrame(processVideo);
+  }, []);
+
+  // Запускаем обработку видео после успешной инициализации
+  useEffect(() => {
+    if (videoRef.current && videoRef.current.readyState === 4) {
+      processVideo();
+    }
+  }, [processVideo]);
+
+  // Добавляем обработчик события loadeddata
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleVideoLoad = () => {
+      console.log('Видео загружено, начинаем обработку');
+      processVideo();
+    };
+
+    video.addEventListener('loadeddata', handleVideoLoad);
+    return () => video.removeEventListener('loadeddata', handleVideoLoad);
+  }, [processVideo]);
 
   // Инициализация камеры
   useEffect(() => {
@@ -29,17 +87,64 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
       setScanResult(null);
 
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
+        console.log('Запрашиваем доступ к камере...');
+        const constraints = {
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
+        
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('Доступ к камере получен:', stream);
+        
+        const tracks = stream.getVideoTracks();
+        console.log('Видеотреки:', tracks);
+        
+        if (tracks.length === 0) {
+          throw new Error('Не удалось получить видеопоток с камеры');
+        }
 
         if (videoRef.current) {
+          videoRef.current.srcObject = null; // Очищаем предыдущий поток
           videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+          videoRef.current.playsInline = true;
+          
+          // Ждем, пока видео будет готово к воспроизведению
+          await new Promise((resolve, reject) => {
+            videoRef.current.onloadedmetadata = () => {
+              console.log('Метаданные видео загружены');
+              resolve();
+            };
+            videoRef.current.onerror = (error) => {
+              console.error('Ошибка загрузки видео:', error);
+              reject(new Error('Ошибка загрузки видео'));
+            };
+          });
+
+          // Пытаемся начать воспроизведение
+          try {
+            await videoRef.current.play();
+            console.log('Воспроизведение видео началось успешно');
+          } catch (playError) {
+            console.error('Ошибка воспроизведения:', playError);
+            throw new Error('Не удалось начать воспроизведение видео');
+          }
+        } else {
+          throw new Error('Видеоэлемент не найден');
         }
       } catch (err) {
-        console.error('Ошибка камеры:', err);
-        setError('Для работы сканера необходимо разрешить доступ к камере');
+        console.error('Ошибка инициализации камеры:', err);
+        if (err.name === 'NotAllowedError') {
+          setError('Для работы сканера необходимо разрешить доступ к камере');
+        } else if (err.name === 'NotFoundError') {
+          setError('Камера не найдена на устройстве');
+        } else if (err.name === 'NotReadableError') {
+          setError('Камера занята другим приложением');
+        } else {
+          setError(`Ошибка инициализации камеры: ${err.message}`);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -52,38 +157,6 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isOpen]);
-
-  // Сканирование QR-кода
-  useEffect(() => {
-    const scanQRCode = () => {
-      if (!videoRef.current || videoRef.current.readyState !== 4) {
-        requestAnimationFrame(scanQRCode);
-        return;
-      }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-      if (code) {
-        console.log('Найден QR-код:', code.data);
-        setScanResult(code.data);
-        setShowResult(true);
-      }
-
-      requestAnimationFrame(scanQRCode);
-    };
-
-    let frameId;
-    if (isOpen) {
-      frameId = requestAnimationFrame(scanQRCode);
-    }
-    return () => cancelAnimationFrame(frameId);
   }, [isOpen]);
 
   // Обработка загрузки QR-кода из файла
@@ -130,7 +203,7 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
       {isOpen && (
         <div className="fixed inset-0 z-50 flex flex-col">
           {/* Затемнение фона */}
-          <div className="fixed inset-0 bg-black" />
+          <div className="fixed inset-0 bg-black/80" />
           
           {/* Верхняя панель */}
           <div className="relative flex items-center justify-between p-4">
@@ -147,12 +220,19 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
           </div>
 
           {/* Основная область сканирования */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 bg-black">
             <video 
               ref={videoRef} 
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full"
               playsInline 
-              autoPlay
+              muted
+              style={{
+                objectFit: 'contain'
+              }}
+            />
+            <canvas
+              ref={canvasRef}
+              className="hidden"
             />
             
             {/* Рамка сканирования */}
