@@ -17,6 +17,11 @@ const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null
     } else if (!isOpen) {
       // Сбрасываем шаг при закрытии модального окна
       setStep(1);
+      // Сбрасываем выбранную криптовалюту при закрытии окна,
+      // но только если она не была получена извне
+      if (!initialCrypto) {
+        setSelectedCrypto('TON');
+      }
     }
   }, [isOpen, initialCrypto]);
 
@@ -26,6 +31,17 @@ const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null
 
   const handleBack = () => {
     setStep(1);
+  };
+  
+  // Обработчик для иконки "Назад" вверху модального окна
+  const handleHeaderBack = () => {
+    if (step === 2) {
+      // Если мы на втором шаге, возвращаемся к выбору криптовалюты
+      handleBack();
+    } else {
+      // Если мы на первом шаге, закрываем окно
+      onClose();
+    }
   };
   
   // Обработчик копирования адреса
@@ -146,7 +162,7 @@ const DepositModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null
       isOpen={isOpen}
       onClose={onClose}
       title="Пополнить"
-      onBack={onClose}
+      onBack={handleHeaderBack}
       footer={renderFooter()}
       fullScreen={fullScreen}
     >

@@ -27,6 +27,17 @@ const SendModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null })
   const handleBack = () => {
     setStep(1);
   };
+  
+  // Обработчик для иконки "Назад" вверху модального окна
+  const handleHeaderBack = () => {
+    if (step === 2) {
+      // Если мы на втором шаге, возвращаемся к выбору параметров
+      handleBack();
+    } else {
+      // Если мы на первом шаге, закрываем окно
+      onClose();
+    }
+  };
 
   const handleConfirm = () => {
     // Здесь будет логика отправки средств
@@ -168,7 +179,7 @@ const SendModal = ({ isOpen, onClose, fullScreen = true, initialCrypto = null })
       isOpen={isOpen}
       onClose={onClose}
       title="Отправить"
-      onBack={onClose}
+      onBack={handleHeaderBack}
       footer={renderFooter()}
       fullScreen={fullScreen}
     >
