@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Footer from './components/Footer';
 import Modal from './components/Modal';
 import './index.css';
 import './utils/safeArea.css';
 import { useTelegram } from './contexts/TelegramContext';
 import useDeviceDetection from './hooks/useDeviceDetection';
+import useTouchPrevention from './hooks/useTouchPrevention';
 
 function App() {
   const { user } = useTelegram();
@@ -17,6 +18,12 @@ function App() {
   
   // Определение типа устройства
   const deviceInfo = useDeviceDetection();
+  
+  // Ref для основного контейнера
+  const mainRef = useRef<HTMLElement>(null);
+  
+  // Используем хук для предотвращения сворачивания
+  useTouchPrevention(mainRef);
   
   // Добавление класса для iOS-устройств с Home Indicator
   useEffect(() => {
@@ -47,18 +54,25 @@ function App() {
     switch (activeTab) {
       case 'home':
         return (
-          <>
-            <h1 className="text-2xl font-bold mb-4">Криптокошелек</h1>
+          <div className="pt-[50px]">
+            <h1 className="text-2xl font-bold mb-4">Главная</h1>
             <div className="card mb-6">
-              <div className="text-center mb-2">Ваш баланс</div>
-              <div className="text-3xl font-bold text-center">1,234.56 USDT</div>
-              <div className="flex justify-center mt-4 space-x-3">
-                <button className="btn btn-primary" onClick={handleReceive}>Пополнить</button>
-                <button className="btn btn-outline" onClick={handleSend}>Отправить</button>
-                <button className="btn btn-secondary" onClick={handleScan}>Оплатить</button>
+              <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                <div className="text-xl font-medium">Баланс</div>
+                <div className="text-2xl font-bold">42,850 ₽</div>
+              </div>
+              <div className="p-4 flex space-x-3">
+                <button className="btn btn-primary flex-1" onClick={handleSend}>Отправить</button>
+                <button className="btn btn-outline flex-1" onClick={handleReceive}>Получить</button>
+                <button className="btn btn-secondary flex-1" onClick={handleScan}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mx-auto" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm2 2v-1h1v1H5zM3 13a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zm2 2v-1h1v1H5zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3zm1 2v1h1V5h-1z" />
+                    <path d="M11 4a1 1 0 10-2 0v1a1 1 0 102 0V4zM10 7a1 1 0 011 1v1h2a1 1 0 110 2h-3a1 1 0 01-1-1V8a1 1 0 011-1zM16 9a1 1 0 100 2 1 1 0 000-2zM9 13a1 1 0 011-1h1a1 1 0 110 2v2a1 1 0 11-2 0v-3zM7 11a1 1 0 100-2H4a1 1 0 100 2h3z" />
+                  </svg>
+                </button>
               </div>
             </div>
-          </>
+          </div>
         );
       case 'history':
         return (
@@ -146,7 +160,7 @@ function App() {
         </div>
       </header>
       
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6" ref={mainRef as React.RefObject<HTMLDivElement>}>
         {renderTab()}
       </main>
       

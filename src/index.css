@@ -62,6 +62,65 @@
     @apply rounded-lg border border-gray-700 px-4 py-2 
     bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary text-white;
   }
+  
+  /* Адаптивные классы для разных размеров экранов */
+  .balance-text {
+    @apply text-5xl font-bold;
+  }
+  
+  @media (max-width: 390px) {
+    .balance-text {
+      @apply text-4xl;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    .balance-text {
+      @apply text-3xl;
+    }
+  }
+  
+  /* Адаптивная кнопка для маленьких экранов */
+  .action-button-container {
+    @apply flex-1 flex flex-col items-center;
+  }
+  
+  .action-button {
+    @apply w-12 h-12 bg-gradient-to-br from-black to-gray-700 rounded-full flex items-center justify-center mb-2;
+  }
+  
+  @media (max-width: 360px) {
+    .action-button {
+      @apply w-10 h-10;
+    }
+    
+    .action-button svg {
+      @apply h-5 w-5;
+    }
+    
+    .action-button-container span {
+      @apply text-xs;
+    }
+  }
+  
+  /* Адаптивные отступы для маленьких экранов */
+  .adaptive-p-5 {
+    @apply p-5;
+  }
+  
+  .adaptive-p-4 {
+    @apply p-4;
+  }
+  
+  @media (max-width: 360px) {
+    .adaptive-p-5 {
+      @apply p-3;
+    }
+    
+    .adaptive-p-4 {
+      @apply p-3;
+    }
+  }
 }
 
 /* Стилизация селектов для корректного отображения на всех платформах, включая MacOS */
@@ -121,4 +180,31 @@ body {
 .bg-background {
   min-height: 100vh;
   overflow: hidden;
+} 
+
+/* Изменение цвета pull-to-refresh в мобильных браузерах */
+@supports (-webkit-touch-callout: none) {
+  /* Стиль для iOS pull-to-refresh */
+  :root {
+    --pulltorefresh-background: #020203;
+    --pulltorefresh-text: #020203;
+    color-scheme: dark;
+  }
+}
+
+/* Создание искусственной области для pull-to-refresh на страницах без прокрутки */
+.artificial-scroll-container {
+  position: relative;
+  min-height: calc(100vh + 100px);  /* Делаем контейнер немного длиннее, чем видимая область */
+  padding-top: 50px;  /* Добавляем отступ сверху для создания области для прокрутки */
+}
+
+.artificial-scroll-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background-color: #020203;  /* Тот же цвет, что и фон приложения */
 } 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Footer from './components/Footer.jsx';
 import BalanceSection from './components/BalanceSection.jsx';
 import TokenList from './components/TokenList.jsx';
@@ -14,6 +14,7 @@ import useToast from './hooks/useToast';
 import copyToClipboard from './utils/clipboard';
 import TransactionsList from './components/TransactionsList';
 import TransactionDetail from './components/TransactionDetail';
+import useTouchPrevention from './hooks/useTouchPrevention';
 import './index.css';
 
 function App() {
@@ -36,6 +37,33 @@ function App() {
   const [paymentData, setPaymentData] = useState(null);
   const [selectedCrypto, setSelectedCrypto] = useState(null);
   const [selectedTokenData, setSelectedTokenData] = useState(null);
+
+  const mainRef = useRef(null);
+  
+  // Используем хук для предотвращения сворачивания
+  useTouchPrevention(mainRef);
+
+  // Демо-токены для отображения
+  const demoTokens = [
+    {
+      symbol: 'TON',
+      name: 'Toncoin',
+      balance: '4.2381',
+      usdPrice: 6.74,
+      totalValue: 28.57,
+      priceChange: 2.5,
+      logo: `${process.env.PUBLIC_URL}/ton.svg`
+    },
+    {
+      symbol: 'USDT',
+      name: 'Tether USD',
+      balance: '250.00',
+      usdPrice: 1.00,
+      totalValue: 250.00,
+      priceChange: 0.01,
+      logo: `${process.env.PUBLIC_URL}/usdt.svg`
+    }
+  ];
 
   // Функция для копирования текста с выводом уведомления
   const handleCopy = async (text, message = "Скопировано!") => {
@@ -424,64 +452,35 @@ function App() {
 
   // Секция профиля
   const renderProfile = () => {
-    // Получаем данные пользователя
     const userName = user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Гость';
-    const userInitial = userName.charAt(0);
-    const username = user?.username || '-';
-    const photoUrl = user?.photo_url;
+    const username = user?.username || 'username';
     
-    // Добавляем возможность копировать ID пользователя
     const handleCopyUserId = () => {
       if (user?.id) {
-        handleCopy(user.id.toString(), 'ID пользователя скопирован!');
+        handleCopy(user.id.toString(), 'ID скопирован!');
       }
     };
     
     return (
-      <div className="bg-secondary rounded-xl p-5 text-white">
+      <div className="bg-secondary rounded-xl adaptive-p-5 text-white">
         <h2 className="text-xl font-bold mb-4">Профиль</h2>
-        
-        {isLoading ? (
-          // Отображаем скелетон загрузки
-          <div className="animate-pulse">
-            <div className="flex items-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-gray-700 mr-4"></div>
-              <div className="flex-1">
-                <div className="h-5 bg-gray-700 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-              </div>
-            </div>
-            <div className="bg-gray-700 rounded-lg p-4 mb-3 h-12"></div>
-            <div className="bg-gray-700 rounded-lg p-4 h-12"></div>
-          </div>
-        ) : (
-          // Отображаем профиль пользователя
+        {!isLoading && (
           <>
-            <div className="flex items-center mb-4">
-              {photoUrl ? (
-                <div className="w-16 h-16 rounded-full bg-gray-700 mr-4 overflow-hidden">
-                  <img 
-                    src={photoUrl} 
-                    alt={userName} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-lime-400 text-black flex items-center justify-center text-2xl font-bold mr-4 transition-transform duration-300 hover:scale-105">
-                  {userInitial}
-                </div>
-              )}
+            <div className="flex items-center mb-6">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-lime-400 text-black flex items-center justify-center text-xl md:text-2xl font-bold mr-3 md:mr-4">
+                {user?.first_name?.charAt(0) || 'G'}
+              </div>
               <div className="transition-opacity duration-300">
-                <h3 className="text-lg font-medium">{userName}</h3>
-                <p className="text-gray-400">@{username}</p>
+                <h3 className="text-base md:text-lg font-medium">{userName}</h3>
+                <p className="text-sm text-gray-400">@{username}</p>
               </div>
             </div>
             
-            <div className="bg-gray-800 rounded-lg p-4 mb-3 transition-colors duration-300 hover:bg-gray-700">
+            <div className="bg-gray-800 rounded-lg adaptive-p-4 mb-3 transition-colors duration-300 hover:bg-gray-700">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">ID пользователя</span>
+                <span className="text-sm text-gray-400">ID пользователя</span>
                 <div className="flex items-center">
-                  <span className="text-sm mr-2">{user?.id || 'Н/Д'}</span>
+                  <span className="text-xs md:text-sm mr-2">{user?.id || 'Н/Д'}</span>
                   {user?.id && (
                     <button onClick={handleCopyUserId} className="text-gray-400 hover:text-lime-400">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -494,17 +493,17 @@ function App() {
               </div>
             </div>
             
-            <div className="bg-gray-800 rounded-lg p-4 mb-3 transition-colors duration-300 hover:bg-gray-700">
+            <div className="bg-gray-800 rounded-lg adaptive-p-4 mb-3 transition-colors duration-300 hover:bg-gray-700">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Язык</span>
-                <span className="text-sm">{user?.language_code?.toUpperCase() || 'RU'}</span>
+                <span className="text-sm text-gray-400">Язык</span>
+                <span className="text-xs md:text-sm">{user?.language_code?.toUpperCase() || 'RU'}</span>
               </div>
             </div>
             
-            <div className="bg-gray-800 rounded-lg p-4 transition-colors duration-300 hover:bg-gray-700">
+            <div className="bg-gray-800 rounded-lg adaptive-p-4 transition-colors duration-300 hover:bg-gray-700">
               <div className="flex justify-between items-center">
-                <span className="text-gray-400">Дата регистрации</span>
-                <span className="text-sm">21.04.2023</span>
+                <span className="text-sm text-gray-400">Дата регистрации</span>
+                <span className="text-xs md:text-sm">21.04.2023</span>
               </div>
             </div>
           </>
@@ -518,18 +517,25 @@ function App() {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="space-y-6">
-            <BalanceSection onSend={handleSend} onReceive={handleReceive} onScan={handleScan} />
-            
-            <TokenList 
-              onTokenClick={handleTokenClick} 
-              onTokenContextClick={handleTokenContextClick}
+          <div>
+            <BalanceSection
+              onSend={handleSend}
+              onReceive={handleReceive}
+              onScan={handleScan}
             />
+            
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-4">Токены</h2>
+              <TokenList 
+                onTokenClick={handleTokenClick}
+                onContextMenu={handleTokenContextClick}
+              />
+            </div>
           </div>
         );
       case 'history':
         return (
-          <div className="bg-secondary rounded-xl p-5 text-white">
+          <div className="bg-secondary rounded-xl adaptive-p-5 text-white">
             <h2 className="text-xl font-bold mb-4">История транзакций</h2>
             {demoTransactions.length > 0 ? (
               <TransactionsList 
@@ -538,19 +544,19 @@ function App() {
                 showTime={true}
               />
             ) : (
-              <p className="text-gray-400">У вас пока нет транзакций</p>
+              <p className="text-gray-400 text-sm md:text-base">У вас пока нет транзакций</p>
             )}
           </div>
         );
       case 'airdrop':
         return (
-          <div className="bg-secondary rounded-xl p-5 text-white">
+          <div className="bg-secondary rounded-xl adaptive-p-5 text-white">
             <h2 className="text-xl font-bold mb-6">Earn XP, Get Rewards</h2>
             
             {/* XP баланс */}
-            <div className="bg-gray-800 rounded-xl p-5 mb-6">
+            <div className="bg-gray-800 rounded-xl adaptive-p-4 mb-6">
               <div className="text-sm text-gray-400 mb-1">Ваш баланс XP</div>
-              <div className="text-3xl font-bold mb-4">750 XP</div>
+              <div className="text-2xl md:text-3xl font-bold mb-4">750 XP</div>
               <div className="bg-gray-700 rounded-full h-2 mb-1">
                 <div className="bg-lime-400 h-2 rounded-full" style={{ width: '75%' }}></div>
               </div>
@@ -561,39 +567,39 @@ function App() {
             <div className="mb-6">
               <h3 className="text-lg font-medium mb-3">Зарабатывайте XP</h3>
               <div className="space-y-3">
-                <div className="bg-gray-800 rounded-xl p-4">
+                <div className="bg-gray-800 rounded-xl adaptive-p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-lime-400" viewBox="0 0 20 20" fill="currentColor">
+                      <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-700 flex items-center justify-center mr-2 md:mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-lime-400" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium whitespace-nowrap">Пополнение кошелька</p>
-                        <p className="text-sm text-gray-400">+50 XP за каждое пополнение</p>
+                        <p className="font-medium text-sm md:text-base whitespace-nowrap">Пополнение кошелька</p>
+                        <p className="text-xs md:text-sm text-gray-400">+50 XP за каждое пополнение</p>
                       </div>
                     </div>
-                    <span className="text-lime-400 font-medium ml-2 whitespace-nowrap">+50 XP</span>
+                    <span className="text-lime-400 font-medium text-sm md:text-base ml-2 whitespace-nowrap">+50 XP</span>
                   </div>
                 </div>
                 
-                <div className="bg-gray-800 rounded-xl p-4">
+                <div className="bg-gray-800 rounded-xl adaptive-p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-200" viewBox="0 0 20 20" fill="currentColor">
+                      <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-700 flex items-center justify-center mr-2 md:mr-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 text-gray-200" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
                           <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium whitespace-nowrap">Оплата покупки</p>
-                        <p className="text-sm text-gray-400">+100 XP за каждую покупку</p>
+                        <p className="font-medium text-sm md:text-base whitespace-nowrap">Оплата покупки</p>
+                        <p className="text-xs md:text-sm text-gray-400">+100 XP за каждую покупку</p>
                       </div>
                     </div>
-                    <span className="text-gray-200 font-medium ml-2 whitespace-nowrap">+100 XP</span>
+                    <span className="text-gray-200 font-medium text-sm md:text-base ml-2 whitespace-nowrap">+100 XP</span>
                   </div>
                 </div>
               </div>
@@ -602,21 +608,21 @@ function App() {
             {/* Приглашение друзей */}
             <div>
               <h3 className="text-lg font-medium mb-3">Пригласите друзей</h3>
-              <div className="bg-gray-800 rounded-xl p-4 mb-4">
-                <p className="text-sm mb-4">За каждого приглашенного друга, который зарегистрируется по вашей ссылке, вы получите +300 XP</p>
-                <div className="bg-gray-900 rounded-lg p-3 flex justify-between items-center mb-3 overflow-hidden">
-                  <span className="text-sm font-mono text-gray-400 truncate mr-2">https://t.me/cryptosbp_bot?start=ref_83947593</span>
+              <div className="bg-gray-800 rounded-xl adaptive-p-4 mb-4">
+                <p className="text-xs md:text-sm mb-4">За каждого приглашенного друга, который зарегистрируется по вашей ссылке, вы получите +300 XP</p>
+                <div className="bg-gray-900 rounded-lg p-2 md:p-3 flex justify-between items-center mb-3 overflow-hidden">
+                  <span className="text-xs md:text-sm font-mono text-gray-400 truncate mr-2">https://t.me/cryptosbp_bot?start=ref_83947593</span>
                   <button 
                     className="text-lime-400 flex-shrink-0"
                     onClick={() => navigator.clipboard.writeText('https://t.me/cryptosbp_bot?start=ref_83947593')}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M8 3a1 1 0 011-1h2a1 1 0 100 2H9a1 1 0 01-1-1z" />
                       <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                     </svg>
                   </button>
                 </div>
-                <button className="bg-gradient-to-br from-gray-700 to-gray-800 text-white border border-gray-600 px-4 py-3 rounded-xl font-medium w-full hover:bg-gray-700">
+                <button className="bg-gradient-to-br from-gray-700 to-gray-800 text-white border border-gray-600 px-4 py-2 md:py-3 rounded-xl font-medium w-full hover:bg-gray-700 text-sm md:text-base">
                   Поделиться ссылкой
                 </button>
               </div>
@@ -645,7 +651,7 @@ function App() {
 
   return (
     <div className="bg-background min-h-screen text-white flex flex-col">
-      <main className="flex-1 overflow-y-auto pb-32">
+      <main className="flex-1 overflow-y-auto pb-32" ref={mainRef}>
         {activeTab === 'profile' ? (
           <div className="container max-w-md mx-auto p-4">
             {renderProfile()}
