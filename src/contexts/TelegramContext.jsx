@@ -24,6 +24,23 @@ export function TelegramProvider({ children }) {
           webApp.ready();
           webApp.expand(); // Разворачиваем приложение на весь экран
           
+          // Добавляем классы для безопасной области в Telegram
+          document.documentElement.classList.add('telegram-webapp');
+          
+          // Если приложение в полноэкранном режиме, добавляем соответствующий класс
+          if (webApp.isExpanded) {
+            document.documentElement.classList.add('telegram-webapp-fullscreen');
+          }
+          
+          // Слушаем события изменения видимой области
+          webApp.onEvent('viewportChanged', () => {
+            if (webApp.isExpanded) {
+              document.documentElement.classList.add('telegram-webapp-fullscreen');
+            } else {
+              document.documentElement.classList.remove('telegram-webapp-fullscreen');
+            }
+          });
+          
           // Добавляем слушатель изменения темы
           webApp.onEvent('themeChanged', () => {
             document.body.style.backgroundColor = webApp.themeParams?.bg_color || '#020203';

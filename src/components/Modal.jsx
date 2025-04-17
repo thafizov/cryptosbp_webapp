@@ -17,7 +17,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, on
   
   // Изменены стили для полноэкранного режима
   const containerClasses = fullScreen 
-    ? `relative bg-secondary w-full h-[100vh] max-h-[100vh] flex flex-col overflow-hidden` 
+    ? `relative bg-secondary w-full h-[100vh] max-h-[100vh] flex flex-col overflow-hidden telegram-safe-container` 
     : `relative bg-secondary rounded-2xl m-4 w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-xl`;
 
   return (
@@ -26,7 +26,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, on
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={onBack || onClose}></div>
       
       {/* Модальное окно */}
-      <div className="fixed inset-0 z-50 flex items-start justify-center p-0">
+      <div className={`fixed inset-0 z-50 flex items-start justify-center p-0 ${fullScreen ? 'telegram-safe-container' : ''}`}>
         <div 
           className={containerClasses}
           onClick={e => e.stopPropagation()}

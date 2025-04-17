@@ -22,6 +22,16 @@
   --safe-area-inset-bottom: 34px;
 }
 
+/* Telegram WebApp специальный отступ сверху */
+.telegram-webapp {
+  --telegram-webapp-top-inset: 0px;
+}
+
+/* Fullscreen mode в Telegram WebApp требует отступов сверху */
+.telegram-webapp-fullscreen {
+  --telegram-webapp-top-inset: 35px; /* Стандартное значение для верхней панели в Telegram */
+}
+
 /* Утилиты для использования с Tailwind */
 .p-safe-bottom {
   padding-bottom: calc(1rem + var(--safe-area-inset-bottom, 0px));
@@ -29,6 +39,20 @@
 
 .m-safe-bottom {
   margin-bottom: calc(1rem + var(--safe-area-inset-bottom, 0px));
+}
+
+/* Новые утилиты для верхнего отступа в Telegram */
+.p-safe-top {
+  padding-top: calc(var(--safe-area-inset-top, 0px) + var(--telegram-webapp-top-inset, 0px));
+}
+
+.m-safe-top {
+  margin-top: calc(var(--safe-area-inset-top, 0px) + var(--telegram-webapp-top-inset, 0px));
+}
+
+/* Контейнер с безопасными отступами для Telegram */
+.telegram-safe-container {
+  padding-top: var(--telegram-webapp-top-inset, 0px);
 }
 
 /* Скрипт для обнаружения поддержки Safe Area */
