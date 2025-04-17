@@ -26,7 +26,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, on
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={onBack || onClose}></div>
       
       {/* Модальное окно */}
-      <div className={`fixed inset-0 z-50 flex items-start justify-center p-0 ${fullScreen ? 'telegram-safe-container' : ''}`}>
+      <div className={`fixed inset-0 z-50 flex items-start justify-center p-0 ${fullScreen ? 'telegram-safe-container' : ''}`} style={{paddingTop: fullScreen ? '70px' : '0'}}>
         <div 
           className={containerClasses}
           onClick={e => e.stopPropagation()}

@@ -717,7 +717,7 @@ function App() {
 
   return (
     <div className="bg-background min-h-screen text-white flex flex-col">
-      <main className="flex-1 overflow-y-auto pb-32 telegram-safe-container" ref={mainRef}>
+      <main className="flex-1 overflow-y-auto pb-32 telegram-safe-container" style={{marginTop: '70px'}} ref={mainRef}>
         {activeTab === 'profile' ? (
           <div className="container max-w-md mx-auto p-4">
             {renderProfile()}

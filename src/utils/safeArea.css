@@ -29,7 +29,7 @@
 
 /* Fullscreen mode в Telegram WebApp требует отступов сверху */
 .telegram-webapp-fullscreen {
-  --telegram-webapp-top-inset: 35px; /* Стандартное значение для верхней панели в Telegram */
+  --telegram-webapp-top-inset: 65px; /* Увеличенное значение для верхней панели в Telegram fullscreen mode */
 }
 
 /* Утилиты для использования с Tailwind */
