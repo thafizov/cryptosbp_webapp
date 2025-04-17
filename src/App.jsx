@@ -11,6 +11,7 @@ import Modal from './components/Modal.jsx';
 import Toast from './components/Toast.jsx';
 import { useTelegram } from './contexts/TelegramContext';
 import useToast from './hooks/useToast';
+import useQrScanner from './hooks/useQrScanner';
 import copyToClipboard from './utils/clipboard';
 import TransactionsList from './components/TransactionsList';
 import TransactionDetail from './components/TransactionDetail';
@@ -39,6 +40,51 @@ function App() {
 
   const mainRef = useRef(null);
   
+  // Добавляем состояния для отслеживания процесса отправки на сервер
+  const [apiRequestStatus, setApiRequestStatus] = useState({
+    loading: false,
+    success: false,
+    error: null
+  });
+
+  // Инициализируем хук для работы с QR сканером
+  const { 
+    isLoading: isQrApiLoading, 
+    error: qrApiError, 
+    handleScan: processQrCode,
+    sendToServer,
+    resetScanner
+  } = useQrScanner({
+    onScanSuccess: (data) => {
+      console.log('QR код успешно отсканирован:', data);
+    },
+    onApiSuccess: (result) => {
+      console.log('Данные успешно отправлены на сервер:', result);
+      setApiRequestStatus({
+        loading: false,
+        success: true,
+        error: null
+      });
+      
+      // Показываем уведомление об успешной обработке
+      showToast('QR-код успешно обработан', 'success');
+      
+      // После успешной обработки переключаемся на вкладку истории
+      setActiveTab('history');
+    },
+    onApiError: (error) => {
+      console.error('Ошибка при отправке данных на сервер:', error);
+      setApiRequestStatus({
+        loading: false,
+        success: false,
+        error: error.message || 'Ошибка при обработке QR-кода'
+      });
+      
+      // Показываем уведомление об ошибке
+      showToast('Ошибка при обработке QR-кода', 'error');
+    }
+  });
+
   // Демо-токены для отображения
   const demoTokens = [
     {
@@ -187,6 +233,7 @@ function App() {
     };
   }, [modalStack, webApp, goBackToPreviousModal]);
 
+  // Обновляем функцию обработки успешного сканирования QR-кода
   const handleScanSuccess = (result) => {
     console.log('QR код отсканирован:', result);
     
@@ -195,66 +242,96 @@ function App() {
     
     // Обработка результата сканирования
     try {
-      // Проверяем, является ли результат URL для оплаты
-      // Предполагаем, что любая ссылка или текст является платежным QR-кодом
+      // Проверяем результат сканирования
+      if (!result) {
+        throw new Error('Не удалось получить данные QR-кода');
+      }
+      
+      // Обрабатываем результат сканирования
+      const qrData = processQrCode(result);
+      
+      // Проверяем, успешно ли обработан QR-код
+      if (!qrData) {
+        throw new Error('Не удалось обработать QR-код');
+      }
+      
+      // Сохраняем данные для отображения в модальном окне
       setPaymentData({ 
         paymentUrl: result, 
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString(),
+        isProcessing: false // Изменяем флаг, т.к. обработка начнется только после подтверждения
       });
+      
+      // Сбрасываем статус API запроса
+      setApiRequestStatus({
+        loading: false,
+        success: false,
+        error: null
+      });
+      
+      // Открываем модальное окно платежа
       openModal('payment');
     } catch (error) {
       console.error('Ошибка при обработке QR-кода:', error);
-      alert('Ошибка при обработке QR-кода');
+      
+      setApiRequestStatus({
+        loading: false,
+        success: false,
+        error: error.message || 'Произошла ошибка при обработке QR-кода'
+      });
+      
+      // Показываем уведомление об ошибке, но не закрываем приложение
+      showToast(error.message || 'Ошибка при обработке QR-кода', 'error');
     }
   };
 
-  // Функция для обработки подтверждения платежа
+  // Обновляем функцию для обработки подтверждения платежа
   const handlePaymentConfirm = () => {
-    // Здесь будет логика отправки данных на сервер
-    console.log('Оплата подтверждена, данные для отправки:', paymentData);
-    
-    // ВАЖНО: МЕСТО ДЛЯ РЕАЛИЗАЦИИ ОТПРАВКИ ДАННЫХ НА СЕРВЕР
-    // =====================================================
-    // Примерная реализация:
-    // 
-    // fetch('https://api.yourservice.com/payment/process', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     paymentUrl: paymentData.paymentUrl,
-    //     userId: 'current-user-id', // получить из контекста пользователя
-    //     timestamp: paymentData.timestamp
-    //   })
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   // Обработка успешного ответа от сервера
-    //   if (data.success) {
-    //     alert('Платеж успешно выполнен!');
-    //     setActiveTab('history');
-    //   } else {
-    //     alert(`Ошибка при обработке платежа: ${data.message}`);
-    //   }
-    // })
-    // .catch(error => {
-    //   console.error('Ошибка отправки запроса:', error);
-    //   alert('Не удалось обработать платеж. Попробуйте позже.');
-    // });
-    // =====================================================
-    
-    // Имитация успешной отправки данных (для демонстрации)
-    setTimeout(() => {
-      // Закрываем модальное окно
+    // Если запрос уже завершен успешно, просто закрываем окно
+    if (apiRequestStatus.success) {
       closeModal('payment');
-      
-      // В демо-версии просто показываем уведомление
-      alert('Данные для оплаты отправлены на сервер!');
-      
-      // После оплаты переключаемся на вкладку истории
-      setActiveTab('history');
-    }, 1000);
+      return;
+    }
+    
+    // Если запрос все еще выполняется, показываем уведомление
+    if (apiRequestStatus.loading) {
+      showToast('Обработка платежа, пожалуйста, подождите...', 'info');
+      return;
+    }
+    
+    // Проверяем, что есть данные для отправки
+    if (!paymentData || !paymentData.paymentUrl) {
+      showToast('Нет данных для отправки на сервер', 'error');
+      return;
+    }
+    
+    // Устанавливаем статус запроса на "загрузка"
+    setApiRequestStatus({
+      loading: true,
+      success: false,
+      error: null
+    });
+    
+    // Отправляем данные на сервер и обрабатываем результат
+    // Важно - здесь мы не используем try-catch, так как sendToServer
+    // теперь не выбрасывает исключения, а возвращает объект с полем error
+    sendToServer(paymentData.paymentUrl, user?.id || 1)
+      .then(result => {
+        // Обработка результата встроена в хук useQrScanner
+        // Если есть успех или ошибка, соответствующие колбэки будут вызваны
+        // и apiRequestStatus будет обновлен автоматически
+        console.log('Результат отправки на сервер:', result);
+      })
+      .catch(error => {
+        // Этот блок выполнится только если произойдет непредвиденная ошибка
+        console.error('Непредвиденная ошибка при отправке на сервер:', error);
+        setApiRequestStatus({
+          loading: false,
+          success: false,
+          error: error.message || 'Непредвиденная ошибка при отправке запроса'
+        });
+        showToast('Непредвиденная ошибка при отправке запроса', 'error');
+      });
   };
 
   // Обновляем обработчики, чтобы указывать иерархию модальных окон
@@ -686,6 +763,7 @@ function App() {
         onClose={() => closeModal('payment')}
         paymentData={paymentData}
         onConfirm={handlePaymentConfirm}
+        apiStatus={apiRequestStatus}
       />
       
       <Modal
