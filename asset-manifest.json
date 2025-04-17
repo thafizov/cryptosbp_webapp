@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/cryptosbp_webapp/static/css/main.e5585152.css",
-    "main.js": "/cryptosbp_webapp/static/js/main.ea11e74b.js",
+    "main.js": "/cryptosbp_webapp/static/js/main.61d229cc.js",
     "index.html": "/cryptosbp_webapp/index.html",
     "main.e5585152.css.map": "/cryptosbp_webapp/static/css/main.e5585152.css.map",
-    "main.ea11e74b.js.map": "/cryptosbp_webapp/static/js/main.ea11e74b.js.map"
+    "main.61d229cc.js.map": "/cryptosbp_webapp/static/js/main.61d229cc.js.map"
   },
   "entrypoints": [
     "static/css/main.e5585152.css",
-    "static/js/main.ea11e74b.js"
+    "static/js/main.61d229cc.js"
   ]
 }
