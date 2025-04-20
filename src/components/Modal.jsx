@@ -17,7 +17,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, on
   
   // Изменены стили для полноэкранного режима
   const containerClasses = fullScreen 
-    ? `relative bg-secondary w-full h-[100vh] max-h-[100vh] flex flex-col overflow-hidden telegram-safe-container` 
+    ? `relative bg-secondary w-full h-[100svh] flex flex-col overflow-hidden` 
     : `relative bg-secondary rounded-2xl m-4 w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden shadow-xl`;
 
   return (
@@ -26,7 +26,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, on
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40" onClick={onBack || onClose}></div>
       
       {/* Модальное окно */}
-      <div className={`fixed inset-0 z-50 flex items-start justify-center p-0 ${fullScreen ? 'telegram-safe-container' : ''}`}>
+      <div className={`fixed inset-0 z-50 flex items-start justify-center p-0 ${fullScreen ? 'pb-safe' : ''}`}>
         <div 
           className={containerClasses}
           onClick={e => e.stopPropagation()}
@@ -50,13 +50,13 @@ const Modal = ({ isOpen, onClose, title, children, footer, fullScreen = true, on
           )}
           
           {/* Содержимое */}
-          <div className="flex-1 overflow-y-auto p-5">
+          <div className="flex-1 overflow-y-auto p-5 pb-safe">
             {children}
           </div>
           
-          {/* Нижняя панель */}
+          {/* Нижняя панель - добавлена поддержка Safe Area и отступ снизу */}
           {footer && (
-            <div className="p-5 border-t border-gray-800">
+            <div className="sticky bottom-4 p-5 pt-4 pb-safe border-t border-gray-800 bg-secondary mx-4 mb-4 rounded-xl shadow-lg">
               {footer}
             </div>
           )}
