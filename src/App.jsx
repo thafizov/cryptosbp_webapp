@@ -237,16 +237,17 @@ function App() {
   const handleScanSuccess = (result) => {
     console.log('QR код отсканирован:', result);
     
+    // Дополнительная проверка валидности результата на стороне App
+    if (!result || typeof result !== 'string' || result.trim().length < 3) {
+      console.warn('Получены некорректные данные QR-кода, игнорируем:', result);
+      return; // Не закрываем модальное окно и не обрабатываем результат
+    }
+    
     // Закрываем модальное окно сканера
     closeModal('scanner');
     
     // Обработка результата сканирования
     try {
-      // Проверяем результат сканирования
-      if (!result) {
-        throw new Error('Не удалось получить данные QR-кода');
-      }
-      
       // Обрабатываем результат сканирования
       const qrData = processQrCode(result);
       

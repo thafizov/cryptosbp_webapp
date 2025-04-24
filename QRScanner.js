@@ -17,6 +17,7 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
   const [error, setError] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
+  const [torchActive, setTorchActive] = useState(false);
 
   // Функция для обработки кадров
   const processVideo = useCallback(() => {
@@ -75,6 +76,39 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
     return () => video.removeEventListener('loadeddata', handleVideoLoad);
   }, [processVideo]);
 
+  // Автоматическое скрытие сообщения об ошибке через 5 секунд
+  useEffect(() => {
+    let errorTimer;
+    if (error) {
+      errorTimer = setTimeout(() => {
+        setError(null);
+      }, 5000); // 5 секунд
+    }
+    return () => {
+      if (errorTimer) clearTimeout(errorTimer);
+    };
+  }, [error]);
+
+  // Сброс состояния ошибки при каждом открытии сканера
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+    }
+  }, [isOpen]);
+
+  // Таймер безопасности для сброса состояния загрузки
+  useEffect(() => {
+    let safetyTimer;
+    if (isOpen && isLoading) {
+      safetyTimer = setTimeout(() => {
+        setIsLoading(false);
+      }, 10000); // 10 секунд максимум для загрузки
+    }
+    return () => {
+      if (safetyTimer) clearTimeout(safetyTimer);
+    };
+  }, [isOpen, isLoading]);
+
   // Инициализация камеры
   useEffect(() => {
     let stream;
@@ -88,16 +122,22 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
 
       try {
         console.log('Запрашиваем доступ к камере...');
-        const constraints = {
+        
+        // Добавляем таймаут для getUserMedia
+        const mediaStreamPromise = navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
             width: { ideal: 1280 },
             height: { ideal: 720 }
           }
-        };
+        });
         
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('Доступ к камере получен:', stream);
+        // Таймаут для предотвращения зависания
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Таймаут запроса доступа к камере')), 10000);
+        });
+        
+        stream = await Promise.race([mediaStreamPromise, timeoutPromise]);
         
         const tracks = stream.getVideoTracks();
         console.log('Видеотреки:', tracks);
@@ -111,39 +151,49 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
           videoRef.current.srcObject = stream;
           videoRef.current.playsInline = true;
           
-          // Ждем, пока видео будет готово к воспроизведению
-          await new Promise((resolve, reject) => {
-            videoRef.current.onloadedmetadata = () => {
-              console.log('Метаданные видео загружены');
-              resolve();
-            };
-            videoRef.current.onerror = (error) => {
-              console.error('Ошибка загрузки видео:', error);
-              reject(new Error('Ошибка загрузки видео'));
-            };
-          });
-
-          // Пытаемся начать воспроизведение
-          try {
-            await videoRef.current.play();
-            console.log('Воспроизведение видео началось успешно');
-          } catch (playError) {
-            console.error('Ошибка воспроизведения:', playError);
-            throw new Error('Не удалось начать воспроизведение видео');
-          }
+          // Ждем загрузки метаданных с таймаутом
+          await Promise.race([
+            new Promise((resolve) => {
+              videoRef.current.onloadedmetadata = () => {
+                console.log('Метаданные видео загружены');
+                resolve();
+              };
+            }),
+            new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Таймаут загрузки метаданных')), 5000);
+            })
+          ]);
+          
+          // Пытаемся начать воспроизведение с таймаутом
+          await Promise.race([
+            videoRef.current.play(),
+            new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Таймаут воспроизведения')), 5000);
+            })
+          ]);
+          
+          console.log('Воспроизведение видео началось успешно');
         } else {
           throw new Error('Видеоэлемент не найден');
         }
       } catch (err) {
         console.error('Ошибка инициализации камеры:', err);
-        if (err.name === 'NotAllowedError') {
-          setError('Для работы сканера необходимо разрешить доступ к камере. Вы можете загрузить QR-код из файла.');
+        // Устанавливаем флаг ошибки доступа
+        
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setError('Доступ к камере запрещен. Пожалуйста, разрешите доступ к камере в настройках браузера и перезагрузите страницу.');
         } else if (err.name === 'NotFoundError') {
-          setError('Камера не найдена на устройстве. Используйте загрузку QR-кода из файла.');
-        } else if (err.name === 'NotReadableError') {
-          setError('Камера занята другим приложением. Попробуйте загрузить QR-код из файла.');
+          setError('Камера не найдена на вашем устройстве. Проверьте подключение камеры или используйте загрузку QR-кода из файла.');
+        } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+          setError('Камера занята другим приложением или недоступна. Закройте другие приложения, использующие камеру, и попробуйте снова.');
+        } else if (err.name === 'OverconstrainedError') {
+          setError('Указанные параметры камеры не поддерживаются вашим устройством. Попробуйте загрузить QR-код из файла.');
+        } else if (err.name === 'AbortError') {
+          setError('Запрос к камере был отменен. Пожалуйста, попробуйте еще раз.');
+        } else if (err.message && err.message.includes('Таймаут')) {
+          setError('Истекло время ожидания ответа от камеры. Проверьте подключение камеры и попробуйте снова.');
         } else {
-          setError(`Ошибка инициализации камеры: ${err.message}. Вы можете использовать загрузку QR-кода из файла.`);
+          setError(`Ошибка камеры: ${err.message || 'Неизвестная ошибка'}. Попробуйте загрузить QR-код из файла.`);
         }
       } finally {
         setIsLoading(false);
@@ -158,6 +208,25 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
       }
     };
   }, [isOpen]);
+
+  // Переключение фонарика (если доступно)
+  const toggleTorch = async () => {
+    const track = videoRef.current?.srcObject?.getVideoTracks()[0];
+    if (!track || !track.getCapabilities().torch) {
+      setError('Фонарик недоступен на этом устройстве');
+      return;
+    }
+    
+    try {
+      await track.applyConstraints({
+        advanced: [{ torch: !torchActive }]
+      });
+      setTorchActive(!torchActive);
+    } catch (err) {
+      console.error('Ошибка при включении фонарика:', err);
+      setError('Не удалось включить фонарик');
+    }
+  };
 
   // Обработка загрузки QR-кода из файла
   const handleFileUpload = (event) => {
@@ -201,26 +270,26 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col">
-          {/* Затемнение фона */}
-          <div className="fixed inset-0 bg-black/80" />
-          
-          {/* Верхняя панель */}
-          <div className="relative flex items-center justify-between p-4">
+        <div className="fixed inset-0 z-50 flex flex-col bg-black">
+          {/* Верхняя панель - упрощенная */}
+          <div className="relative flex items-center justify-center p-4">
+            <h2 className="text-lg font-medium text-white">Наведите на QR</h2>
+          </div>
+
+          {/* Кнопка закрытия сканера, всегда видимая даже при ошибках */}
+          <div className="fixed top-4 left-4 z-[9999]">
             <button
               onClick={onClose}
-              className="rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+              className="rounded-full bg-black/60 p-2 text-white hover:bg-black/80 shadow-lg"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <h2 className="text-lg font-medium text-white">Сканирование QR-кода</h2>
-            <div className="w-10" /> {/* Для центрирования заголовка */}
           </div>
 
-          {/* Основная область сканирования */}
-          <div className="relative flex-1 bg-black overflow-hidden">
+          {/* Область сканирования - более легкая, с уменьшенной высотой */}
+          <div className="relative bg-black overflow-hidden" style={{ height: '40vh' }}>
             <video 
               ref={videoRef} 
               className="absolute inset-0 h-full w-full object-cover"
@@ -232,49 +301,28 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
               className="hidden"
             />
             
-            {/* Затемненная область с вырезом для сканирования */}
+            {/* Рамка для сканирования - более легкая */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+              <div className="absolute inset-0 bg-black/30"></div>
               
-              {/* Вырез для области сканирования */}
+              {/* Рамка сканирования со светлыми углами */}
               <div className="relative aspect-square w-64">
-                {/* Прозрачная область сканирования (вырез) */}
-                <div className="absolute inset-0 rounded-2xl box-content border-2 border-white">
-                  {/* Углы рамки */}
-                  <div className="absolute -left-1 -top-1 h-6 w-6 border-l-2 border-t-2 border-white rounded-tl-md" />
-                  <div className="absolute -right-1 -top-1 h-6 w-6 border-r-2 border-t-2 border-white rounded-tr-md" />
-                  <div className="absolute -bottom-1 -left-1 h-6 w-6 border-b-2 border-l-2 border-white rounded-bl-md" />
-                  <div className="absolute -bottom-1 -right-1 h-6 w-6 border-b-2 border-r-2 border-white rounded-br-md" />
-                </div>
-                
-                {/* Маска для вырезания отверстия */}
-                <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <defs>
-                    <mask id="scan-area-mask">
-                      <rect width="100" height="100" fill="white" />
-                      <rect x="5" y="5" width="90" height="90" rx="10" fill="black" />
-                    </mask>
-                  </defs>
-                  <rect width="100" height="100" fill="rgba(0,0,0,0.7)" mask="url(#scan-area-mask)" />
-                </svg>
+                {/* Углы рамки */}
+                <div className="absolute -left-2 -top-2 h-8 w-8 border-l border-t border-white"></div>
+                <div className="absolute -right-2 -top-2 h-8 w-8 border-r border-t border-white"></div>
+                <div className="absolute -bottom-2 -left-2 h-8 w-8 border-b border-l border-white"></div>
+                <div className="absolute -bottom-2 -right-2 h-8 w-8 border-b border-r border-white"></div>
               </div>
-            </div>
-
-            {/* Подсказка */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4">
-              <p className="text-center text-sm text-white/90 font-medium">
-                Наведите камеру на QR-код или загрузите изображение
-              </p>
             </div>
           </div>
 
-          {/* Нижняя панель */}
-          <div className="relative flex items-center justify-center gap-4 p-4">
-            <label className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-sm font-medium text-white hover:bg-white/20 cursor-pointer">
+          {/* Кнопка загрузки файла - центральная */}
+          <div className="relative py-4 flex justify-center bg-black">
+            <label className="flex items-center gap-2 rounded-full bg-gray-800 px-6 py-3 text-base font-medium text-white hover:bg-gray-700 cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
               </svg>
-              Загрузить
+              Загрузить файл
               <input
                 type="file"
                 accept="image/*"
@@ -284,10 +332,85 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
             </label>
           </div>
 
+          {/* Нижняя панель с платежами - с фиксированной минимальной высотой */}
+          <div className="bg-gray-900 rounded-t-3xl flex-shrink-0" style={{ minHeight: '35vh', maxHeight: '45vh', overflowY: 'auto' }}>
+            <div className="px-4 py-5">
+              <h3 className="text-lg font-medium text-white mb-4">Переводы</h3>
+              
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                <div className="bg-gray-800 rounded-xl p-3 flex items-center">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-blue-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">По номеру телефона</p>
+                  </div>
+                </div>
+                <div className="bg-gray-800 rounded-xl p-3 flex items-center">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-purple-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">По реквизитам</p>
+                  </div>
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-medium text-white mb-4">Платежи и подписки</h3>
+              
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <div className="bg-gray-800 rounded-xl p-3 flex items-center">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-green-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Мобильная связь</p>
+                  </div>
+                </div>
+                <div className="bg-gray-800 rounded-xl p-3 flex items-center">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-yellow-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Интернет и ТВ</p>
+                  </div>
+                </div>
+                <div className="bg-gray-800 rounded-xl p-3 flex items-center">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-red-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Платежи по Сплитам</p>
+                  </div>
+                </div>
+                <div className="bg-gray-800 rounded-xl p-3 flex items-center">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6 text-indigo-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Подписка Яндекс Плюс</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="absolute inset-0 z-[9998] flex items-center justify-center bg-black/70">
               <div className="text-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 <p className="mt-2 text-sm text-white">Инициализация камеры...</p>
               </div>
             </div>
@@ -295,7 +418,7 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
 
           {/* Сообщение об ошибке доступа к камере */}
           {error && !isLoading && (
-            <div className="absolute top-20 inset-x-0 mx-auto max-w-md bg-red-50 p-4 rounded-lg shadow-lg">
+            <div className="absolute top-20 inset-x-0 z-[9999] mx-auto max-w-md bg-red-50 p-4 rounded-lg shadow-lg">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -319,6 +442,25 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
                   </svg>
                 </button>
               </div>
+              
+              {/* Добавляем кнопки действий при ошибке */}
+              <div className="mt-4 flex justify-center space-x-3">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                >
+                  Закрыть сканер
+                </button>
+                <label className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 cursor-pointer">
+                  Загрузить файл
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
           )}
         </div>
@@ -327,37 +469,37 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
       {/* Результат сканирования */}
       {showResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={handleResultClose} />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={handleResultClose} />
           
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <div className="relative w-full max-w-md rounded-2xl bg-gray-800 p-6 shadow-xl">
             <div className="flex flex-col items-center">
               {scanResult ? (
                 <>
-                  <div className="rounded-full bg-green-100 p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-12 w-12 text-green-500">
+                  <div className="rounded-full bg-green-900 p-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-12 w-12 text-green-400">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">
+                  <h3 className="mt-4 text-lg font-medium text-white">
                     QR-код успешно распознан
                   </h3>
-                  <div className="mt-4 w-full rounded-lg bg-gray-100 p-4">
-                    <pre className="whitespace-pre-wrap break-all text-sm text-gray-700">
+                  <div className="mt-4 w-full rounded-lg bg-gray-700 p-4">
+                    <pre className="whitespace-pre-wrap break-all text-sm text-gray-300">
                       {scanResult}
                     </pre>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="rounded-full bg-red-100 p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-12 w-12 text-red-500">
+                  <div className="rounded-full bg-red-900 p-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-12 w-12 text-red-400">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">
+                  <h3 className="mt-4 text-lg font-medium text-white">
                     QR-код не найден
                   </h3>
-                  <p className="mt-2 text-center text-sm text-gray-500">
+                  <p className="mt-2 text-center text-sm text-gray-400">
                     {error || 'Попробуйте отсканировать другой QR-код или загрузить другое изображение'}
                   </p>
                 </>
@@ -367,7 +509,7 @@ export function QRScanner({ isOpen, onClose, onScanSuccess }) {
             <div className="mt-6 flex justify-center">
               <button
                 onClick={handleResultClose}
-                className="rounded-lg bg-blue-500 px-6 py-2 text-sm font-medium text-white hover:bg-blue-600"
+                className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 Закрыть
               </button>
